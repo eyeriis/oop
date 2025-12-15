@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baghdad Route Finder</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fafafa; color: #333; }
+        body.dark { background: #0d0d0d; color: #e8e8e8; }
+        
+        .container { display: flex; height: 100vh; }
+        .sidebar { width: 360px; background: #fff; padding: 24px; overflow-y: auto; border-right: 1px solid #eee; transition: margin-left 0.3s ease, transform 0.3s ease; }
+        body.dark .sidebar { background: #161616; border-color: #2a2a2a; }
+        
+        .map-container { flex: 1; position: relative; transition: all 0.3s ease; }
+        #map { width: 100%; height: 100%; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h1 { font-size: 20px; font-weight: 600; color: #1a1a1a; letter-spacing: -0.3px; }
+        body.dark h1 { color: #fff; }
+        .dark-toggle { cursor: pointer; font-size: 20px; opacity: 0.7; transition: opacity 0.2s; padding: 8px; border-radius: 8px; }
+        .dark-toggle:hover { opacity: 1; background: rgba(0,0,0,0.05); }
+        body.dark .dark-toggle:hover { background: rgba(255,255,255,0.1); }
+        
+        .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
+        body.dark .tabs { border-color: #2a2a2a; }
+        
+        .tab-btn { padding: 8px 12px; cursor: pointer; border: none; background: transparent; font-size: 12px; font-weight: 500; color: #666; border-radius: 8px; transition: all 0.2s; }
+        body.dark .tab-btn { color: #777; background: transparent; }
+        .tab-btn:hover { background: #f0f0f0; color: #333; }
+        body.dark .tab-btn:hover { background: #252525; color: #e0e0e0; }
+        .tab-btn.active { color: #fff; background: #1a1a1a; }
+        body.dark .tab-btn.active { background: #3a7fff; color: #fff; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 6px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        body.dark label { color: #888; }
+        
+        input, select { width: 100%; padding: 12px 14px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fafafa; transition: all 0.2s; }
+        body.dark input, body.dark select { background: #1e1e1e; color: #e8e8e8; border-color: #333; }
+        input:focus { outline: none; border-color: #1a1a1a; background: #fff; }
+        body.dark input:focus { border-color: #3a7fff; background: #252525; }
+        
+        button { padding: 12px 18px; background: #1a1a1a; color: white; border: none; cursor: pointer; font-weight: 500; border-radius: 10px; font-size: 13px; transition: all 0.2s; }
+        button:hover { background: #333; }
+        body.dark button { background: #3a7fff; color: #fff; }
+        body.dark button:hover { background: #5090ff; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        body.dark button:disabled { background: #333; color: #666; }
+        
+        .small-btn { padding: 8px 12px; font-size: 11px; background: #666; border-radius: 8px; color: #fff; }
+        .small-btn:hover { background: #555; }
+        body.dark .small-btn { background: #333; color: #ccc; }
+        body.dark .small-btn:hover { background: #444; color: #fff; }
+        .danger-btn { background: #dc3545; color: #fff; }
+        .danger-btn:hover { background: #c82333; }
+        body.dark .danger-btn { background: #b02a37; }
+        body.dark .danger-btn:hover { background: #d63848; }
+        .gps-btn { background: #0066ff; color: #fff; }
+        .gps-btn:hover { background: #0052cc; }
+        body.dark .gps-btn { background: #0066ff; }
+        body.dark .gps-btn:hover { background: #3385ff; }
+        
+        .input-row { display: flex; gap: 8px; }
+        .input-row input { flex: 1; }
+        .input-row button { width: auto; margin: 0; white-space: nowrap; }
+        
+        .error { background: #fef2f2; color: #dc2626; padding: 12px 14px; border-radius: 10px; display: none; font-size: 13px; margin: 12px 0; border: 1px solid #fecaca; }
+        .success { background: #f0fdf4; color: #16a34a; padding: 12px 14px; border-radius: 10px; display: none; font-size: 13px; margin: 12px 0; border: 1px solid #bbf7d0; }
+        body.dark .error { background: #2a1515; color: #ff6b6b; border-color: #4a2020; }
+        body.dark .success { background: #152a15; color: #6bff6b; border-color: #204a20; }
+        
+        .spinner { width: 16px; height: 16px; border: 2px solid #e0e0e0; border-top: 2px solid #1a1a1a; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; }
+        body.dark .spinner { border-color: #333; border-top-color: #3a7fff; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .item-card { background: #fafafa; padding: 14px; margin: 10px 0; border-radius: 10px; cursor: pointer; border-left: 3px solid #1a1a1a; font-size: 13px; transition: all 0.2s; }
+        body.dark .item-card { background: #1e1e1e; border-left-color: #3a7fff; color: #e0e0e0; }
+        .item-card:hover { transform: translateX(4px); background: #f0f0f0; }
+        body.dark .item-card:hover { background: #282828; }
+        
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+        .stat { background: #fafafa; padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #eee; }
+        body.dark .stat { background: #1e1e1e; border-color: #2a2a2a; }
+        .stat-value { font-size: 22px; font-weight: 600; color: #1a1a1a; }
+        body.dark .stat-value { color: #3a7fff; }
+        .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        body.dark .stat-label { color: #777; }
+        
+        .waypoint-row { display: flex; gap: 8px; margin: 10px 0; }
+        .waypoint-row input { flex: 1; }
+        .waypoint-row button { width: 40px; margin: 0; }
+        
+        hr { border: none; border-top: 1px solid #eee; margin: 20px 0; }
+        body.dark hr { border-color: #2a2a2a; }
+        
+        h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
+        body.dark h3 { color: #e8e8e8; }
+
+        /* OOP PRESENTATION OVERLAY - Minimal Dark Theme */
+        .oop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #0a0a0a;
+            z-index: 2000;
+            display: none;
+            overflow: hidden;
+        }
+        .oop-overlay.active { display: block; }
+        
+        .oop-close {
+            position: absolute;
+            top: 24px;
+            right: 32px;
+            font-size: 32px;
+            color: #666;
+            cursor: pointer;
+            z-index: 2010;
+            transition: color 0.2s;
+            font-weight: 300;
+        }
+        .oop-close:hover { color: #fff; }
+        
+        .sidebar-toggle {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 3000;
+            background: #1a1a1a;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            padding: 16px 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #ec4899;
+            font-size: 16px;
+        }
+        .sidebar-toggle:hover { background: #2a2a2a; }
+        body.dark .sidebar-toggle { background: #0a0a0a; }
+        body.dark .sidebar-toggle:hover { background: #1a1a1a; }
+        
+        .sidebar.hidden { margin-left: -360px; }
+        
+        body.sidebar-collapsed .sidebar-toggle { left: 0; }
+        body:not(.sidebar-collapsed) .sidebar-toggle { left: 360px; }
+        body.sidebar-collapsed .oop-overlay { border-radius: 0; }
+        @media (max-width: 768px) {
+            body:not(.sidebar-collapsed) .sidebar-toggle { left: 0; top: auto; bottom: 10px; transform: none; }
+        }
+        
+        .oop-slider {
+            display: flex;
+            transition: transform 0.4s ease;
+            height: 100%;
+        }
+        
+        .oop-slide {
+            min-width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            color: white;
+            text-align: center;
+        }
+        
+        .oop-slide h2 {
+            font-size: 48px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            color: #ec4899;
+            letter-spacing: -0.5px;
+        }
+        
+        .oop-slide > p:first-of-type:not(.note-box) {
+            color: #999;
+        }
+        
+        .oop-slide p {
+            font-size: 19px;
+            max-width: 700px;
+            line-height: 1.7;
+            color: #aaa;
+            font-weight: 400;
+        }
+        
+        .oop-slide .code-box {
+            background: #111;
+            border-radius: 12px;
+            padding: 28px 36px;
+            margin: 28px 0;
+            text-align: left;
+            font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
+            font-size: 15px;
+            line-height: 1.9;
+            border: 1px solid #222;
+            max-width: 680px;
+            width: 100%;
+        }
+        
+        .oop-slide .note-box {
+            color: #666;
+            font-size: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 20px;
+            max-width: 680px;
+            padding: 16px 24px;
+            background: rgba(255,255,255,0.02);
+            border-left: 2px solid #333;
+            text-align: left;
+        }
+        
+        .oop-slide .code-box .keyword { color: #ff79c6; font-weight: 500; }
+        .oop-slide .code-box .class-name { color: #8be9fd; font-weight: 500; }
+        .oop-slide .code-box .method { color: #50fa7b; }
+        .oop-slide .code-box .string { color: #f1fa8c; }
+        .oop-slide .code-box .comment { color: #6272a4; font-style: italic; }
+        .oop-slide .code-box .property { color: #bd93f9; }
+        
+        .oop-pillar-box {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 36px;
+        }
+        
+        .oop-pillar {
+            background: #111;
+            padding: 28px 32px;
+            border-radius: 10px;
+            width: 200px;
+            transition: background 0.2s;
+            border: 1px solid #1a1a1a;
+        }
+        .oop-pillar:hover { background: #161616; }
+        .oop-pillar h4 { color: #fff; margin-bottom: 10px; font-size: 17px; font-weight: 500; }
+        .oop-pillar p { font-size: 14px; color: #777; line-height: 1.6; }
+        
+        .oop-nav {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .oop-nav button {
+            background: transparent !important;
+            border: 1px solid rgba(236, 72, 153, 0.3) !important;
+            color: #ec4899 !important;
+            padding: 10px 24px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .oop-nav button:hover { border-color: #ec4899 !important; color: #f9a8d4 !important; background: rgba(236, 72, 153, 0.1) !important; }
+        
+        .oop-dots {
+            display: flex;
+            gap: 8px;
+        }
+        .oop-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .oop-dot.active { background: #fff; }
+        
+        .class-diagram {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 28px;
+        }
+        
+        .class-card {
+            background: #0d0d0d;
+            border-radius: 10px;
+            padding: 24px;
+            width: 220px;
+            text-align: left;
+            border: 1px solid #1a1a1a;
+            transition: border-color 0.2s;
+        }
+        .class-card:hover { border-color: #333; }
+        .class-card h4 { color: #fff; margin-bottom: 14px; font-size: 18px; font-weight: 500; }
+        .class-card .props, .class-card .methods { font-size: 13px; margin: 8px 0; font-family: 'JetBrains Mono', 'Fira Code', monospace; line-height: 1.6; }
+        .class-card .props { color: #bd93f9; }
+        .class-card .methods { color: #50fa7b; }
+        .class-card .label { font-size: 11px; color: #555; text-transform: uppercase; margin-top: 14px; letter-spacing: 1px; }
+
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 36px;
+            background: #111;
+            padding: 32px 40px;
+            border-radius: 12px;
+            border: 1px solid #222;
+        }
+        .flow-step {
+            padding: 14px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+        .flow-step.input { background: #1a1a2e; color: #8be9fd; border: 1px solid #2a2a4e; }
+        .flow-step.method { background: #1a2e1a; color: #50fa7b; border: 1px solid #2a4e2a; }
+        .flow-step.output { background: #2e1a2e; color: #ff79c6; border: 1px solid #4e2a4e; }
+        .flow-arrow { font-size: 20px; color: #444; }
+        
+        .benefits-box {
+            background: #111;
+            border-radius: 12px;
+            border: 1px solid #222;
+            padding: 28px 36px;
+            text-align: left;
+            max-width: 680px;
+            margin-top: 28px;
+        }
+        .benefit-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid #1a1a1a;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .benefit-row:last-child { border-bottom: none; }
+        .benefit-key { color: #ff79c6; font-size: 14px; min-width: 120px; }
+        .benefit-val { color: #8be9fd; font-size: 14px; }
+        .benefit-comment { color: #6272a4; font-size: 13px; font-style: italic; margin-left: auto; }
+
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .sidebar { width: 100%; height: 50vh; order: 2; }
+            .map-container { height: 50vh; order: 1; }
+            .oop-slide h2 { font-size: 32px; }
+            .oop-slide p { font-size: 17px; }
+            .oop-slide .code-box { font-size: 14px; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+<button class="sidebar-toggle" id="sidebarToggle">◀</button>
+<div class="container">
+    <div class="sidebar" id="sidebar">
+        <div class="header">
+            <h1>🗺️ Baghdad Routes</h1>
+            <div class="dark-toggle" id="darkToggle">🌙</div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="route">Route</button>
+            <button class="tab-btn" data-tab="directions">Directions</button>
+            <button class="tab-btn" data-tab="history">History</button>
+            <button class="tab-btn" data-tab="favorites">Favorites</button>
+            <button class="tab-btn" data-tab="tools">Tools</button>
+            <button class="tab-btn" id="oopTabBtn">OOP</button>
+        </div>
+        
+        <!-- ROUTE TAB -->
+        <div id="route" class="tab-content active">
+            <form id="routeForm">
+                <div class="form-group">
+                    <label>🟢 Origin</label>
+                    <div class="input-row">
+                        <input type="text" id="origin" placeholder="Address or lat,lon">
+                        <button type="button" id="myLocationBtn" class="small-btn gps-btn" title="Use GPS">📍</button>
+                        <button type="button" id="pickOriginBtn" class="small-btn" title="Pick on map" style="background:#16a34a;">🗺️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>🔴 Destination</label>
+                    <div class="input-row">
+                        <input type="text" id="destination" placeholder="Address or lat,lon">
+                        <button type="button" id="pickDestBtn" class="small-btn" title="Pick on map" style="background:#dc2626;">🗺️</button>
+                    </div>
+                </div>
+                <div id="waypointsContainer"></div>
+                <button type="button" id="addWaypointBtn" class="small-btn" style="margin-bottom: 10px;">+ Add Stop</button>
+                <button type="submit" id="findBtn" style="width: 100%;">🚗 Find Route</button>
+                <button type="button" id="clearBtn" class="small-btn danger-btn" style="width: 100%; margin-top: 8px;">🗑️ Clear</button>
+            </form>
+            <div id="loading" style="display: none; text-align: center; margin: 15px 0;"><span class="spinner"></span> Finding route...</div>
+            <div class="error" id="error"></div>
+            <div class="success" id="success"></div>
+            <div class="stats" id="routeStats" style="display: none;">
+                <div class="stat"><div class="stat-value" id="distance">0</div><div class="stat-label">Distance (km)</div></div>
+                <div class="stat"><div class="stat-value" id="time">0</div><div class="stat-label">Time (min)</div></div>
+            </div>
+        </div>
+        
+        <!-- DIRECTIONS TAB -->
+        <div id="directions" class="tab-content">
+            <h3>📋 Turn-by-Turn Directions</h3>
+            <div id="directionsList"><p style="color: #888; font-size: 12px;">Find a route first</p></div>
+        </div>
+        
+        <!-- HISTORY TAB -->
+        <div id="history" class="tab-content">
+            <h3>⏱️ Recent Routes</h3>
+            <div id="historyList"><p style="color: #888; font-size: 12px;">No routes yet</p></div>
+            <button id="clearHistoryBtn" class="small-btn danger-btn" style="margin-top: 10px;">🗑️ Clear History</button>
+        </div>
+        
+        <!-- FAVORITES TAB -->
+        <div id="favorites" class="tab-content">
+            <h3>⭐ Save a Location</h3>
+            <div class="form-group"><input type="text" id="favName" placeholder="Name (Home, Work)"></div>
+            <div class="form-group">
+                <div class="input-row">
+                    <input type="text" id="favCoords" placeholder="Coordinates (lat,lon)">
+                    <button type="button" id="favGpsBtn" class="small-btn gps-btn">📍 GPS</button>
+                </div>
+            </div>
+            <button id="saveFavBtn" style="width: 100%;">💾 Save Favorite</button>
+            <hr>
+            <h3>📌 Saved Places</h3>
+            <div id="favList"><p style="color: #888; font-size: 12px;">No favorites</p></div>
+        </div>
+        
+        <!-- TOOLS TAB -->
+        <div id="tools" class="tab-content">
+            <h3>📤 Export Route</h3>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="exportGeoJSON" class="small-btn">GeoJSON</button>
+                <button id="exportGPX" class="small-btn">GPX</button>
+                <button id="exportCSV" class="small-btn">CSV</button>
+            </div>
+            <hr>
+            <h3>🎨 Map Style</h3>
+            <select id="mapStyle">
+                <option value="osm">OpenStreetMap</option>
+                <option value="satellite">Satellite</option>
+                <option value="dark">Dark</option>
+            </select>
+            <hr>
+            <h3>🔗 Share Route</h3>
+            <button id="shareBtn" class="small-btn">📋 Copy Link</button>
+            <div id="shareLink" style="font-size: 10px; word-break: break-all; margin-top: 8px; color: #666;"></div>
+        </div>
+    </div>
+    
+    <div class="map-container">
+        <div id="map"></div>
+        
+        <!-- OOP PRESENTATION OVERLAY -->
+        <div class="oop-overlay" id="oopOverlay">
+            <div class="oop-close" id="oopClose">×</div>
+            
+            <div class="oop-slider" id="oopSlider">
+                <!-- SLIDE 1: INTRO -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">01</p>
+                    <h2>Object-Oriented Programming</h2>
+                    <p>OOP organizes code into Objects — containers with data (properties) and actions (methods).</p>
+                    <div class="code-box">
+                        <span class="comment">// An object bundles data + behavior</span><br>
+                        <span class="keyword">class</span> <span class="class-name">Route</span> {<br>
+                        &nbsp;&nbsp;<span class="property">distance</span> = <span class="string">0</span>;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Data</span><br>
+                        &nbsp;&nbsp;<span class="method">calculate</span>() { ... }&nbsp;&nbsp;<span class="comment">// Behavior</span><br>
+                        }
+                    </div>
+                    <p class="note-box">→ This app uses OOP to organize routing, locations, and history.</p>
+                </div>
+                
+                <!-- SLIDE 2: CLASSES -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">02</p>
+                    <h2>Classes in This App</h2>
+                    <div class="class-diagram">
+                        <div class="class-card">
+                            <h4>Route</h4>
+                            <div class="label">Properties</div>
+                            <div class="props">coordinates[], distance, time</div>
+                            <div class="label">Methods</div>
+                            <div class="methods">calculate(), export(), getDirections()</div>
+                        </div>
+                        <div class="class-card">
+                            <h4>Location</h4>
+                            <div class="label">Properties</div>
+                            <div class="props">address, lat, lon, accuracy</div>
+                            <div class="label">Methods</div>
+                            <div class="methods">geocode(), validate(), toCoords()</div>
+                        </div>
+                        <div class="class-card">
+                            <h4>Favorite</h4>
+                            <div class="label">Properties</div>
+                            <div class="props">name, lat, lon, category</div>
+                            <div class="label">Methods</div>
+                            <div class="methods">save(), delete(), useAsOrigin()</div>
+                        </div>
+                        <div class="class-card">
+                            <h4>History</h4>
+                            <div class="label">Properties</div>
+                            <div class="props">routes[], maxSize</div>
+                            <div class="label">Methods</div>
+                            <div class="methods">add(), getAll(), clear()</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SLIDE 3: 4 PILLARS -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">03</p>
+                    <h2>The 4 Pillars of OOP</h2>
+                    <div class="oop-pillar-box">
+                        <div class="oop-pillar">
+                            <h4>1. Encapsulation</h4>
+                            <p>Hide internal data, expose only necessary methods.</p>
+                        </div>
+                        <div class="oop-pillar">
+                            <h4>2. Inheritance</h4>
+                            <p>Child classes inherit from parents to reuse code.</p>
+                        </div>
+                        <div class="oop-pillar">
+                            <h4>3. Polymorphism</h4>
+                            <p>Same method name, different implementations.</p>
+                        </div>
+                        <div class="oop-pillar">
+                            <h4>4. Abstraction</h4>
+                            <p>Hide complexity behind simple interfaces.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SLIDE 4: ENCAPSULATION -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">04</p>
+                    <h2>Encapsulation</h2>
+                    <p>Each class hides its internal data and exposes only what's necessary.</p>
+                    <div class="code-box">
+                        <span class="keyword">class</span> <span class="class-name">Route</span> {<br>
+                        &nbsp;&nbsp;<span class="keyword">private</span> <span class="property">_coordinates</span> = [];<br>
+                        &nbsp;&nbsp;<span class="keyword">private</span> <span class="property">_distance</span> = <span class="string">0</span>;<br><br>
+                        &nbsp;&nbsp;<span class="comment">// Public method hides complexity</span><br>
+                        &nbsp;&nbsp;<span class="method">export</span>(<span class="property">format</span>) {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> (format === <span class="string">'geojson'</span>) <span class="keyword">return</span> <span class="keyword">this</span>.<span class="method">_toGeoJSON</span>();<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> (format === <span class="string">'gpx'</span>) <span class="keyword">return</span> <span class="keyword">this</span>.<span class="method">_toGPX</span>();<br>
+                        &nbsp;&nbsp;}<br>
+                        }
+                    </div>
+                    <p class="note-box">→ User calls route.export('gpx') without knowing internal logic</p>
+                </div>
+                
+                <!-- SLIDE 5: INHERITANCE -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">05</p>
+                    <h2>Inheritance</h2>
+                    <p>Child classes inherit properties and methods from parent classes.</p>
+                    <div class="code-box">
+                        <span class="keyword">class</span> <span class="class-name">Location</span> {<br>
+                        &nbsp;&nbsp;<span class="property">lat</span>; <span class="property">lon</span>;<br>
+                        &nbsp;&nbsp;<span class="method">geocode</span>() { <span class="comment">/* convert address */</span> }<br>
+                        }<br><br>
+                        <span class="keyword">class</span> <span class="class-name">Favorite</span> <span class="keyword">extends</span> <span class="class-name">Location</span> {<br>
+                        &nbsp;&nbsp;<span class="property">name</span>; <span class="comment">// Additional property</span><br>
+                        &nbsp;&nbsp;<span class="method">save</span>() { <span class="comment">/* store in localStorage */</span> }<br>
+                        }<br><br>
+                        <span class="comment">// Favorite inherits lat, lon, geocode() from Location!</span>
+                    </div>
+                    <p class="note-box">→ Favorite reuses Location's code without rewriting it</p>
+                </div>
+                
+                <!-- SLIDE 6: POLYMORPHISM -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">06</p>
+                    <h2>Polymorphism</h2>
+                    <p>Same method name, different behavior based on context.</p>
+                    <div class="code-box">
+                        <span class="keyword">class</span> <span class="class-name">Route</span> {<br>
+                        &nbsp;&nbsp;<span class="method">export</span>(<span class="property">format</span>) {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">switch</span>(format) {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">case</span> <span class="string">'geojson'</span>: <span class="keyword">return</span> { <span class="property">type</span>: <span class="string">'Feature'</span>... };<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">case</span> <span class="string">'gpx'</span>: <span class="keyword">return</span> <span class="string">'&lt;gpx&gt;...&lt;/gpx&gt;'</span>;<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">case</span> <span class="string">'csv'</span>: <span class="keyword">return</span> <span class="string">'lat,lon\\n...'</span>;<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                        &nbsp;&nbsp;}<br>
+                        }
+                    </div>
+                    <p class="note-box">→ One export() method, three different outputs</p>
+                </div>
+                
+                <!-- SLIDE 7: ABSTRACTION -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">07</p>
+                    <h2>Abstraction</h2>
+                    <p>Hide complex implementation behind simple interfaces.</p>
+                    <div class="code-box">
+                        <span class="comment">// What you see (simple):</span><br>
+                        <span class="keyword">await</span> <span class="method">findRoute</span>(<span class="string">"Tahrir Square"</span>, <span class="string">"Airport"</span>);<br><br>
+                        <span class="comment">// What happens inside (complex):</span><br>
+                        <span class="comment">// 1. Geocode addresses to lat/lon</span><br>
+                        <span class="comment">// 2. Call OSRM routing API</span><br>
+                        <span class="comment">// 3. Parse GeoJSON response</span><br>
+                        <span class="comment">// 4. Calculate distance/time</span><br>
+                        <span class="comment">// 5. Generate turn-by-turn</span><br>
+                        <span class="comment">// 6. Update map display</span>
+                    </div>
+                    <p class="note-box">→ You click "Find Route" — all complexity is hidden</p>
+                </div>
+                
+                <!-- SLIDE 8: DATA FLOW -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">08</p>
+                    <h2>Data Flow in This App</h2>
+                    <div class="flow-diagram">
+                        <div class="flow-step input">userInput</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step method">Location.geocode()</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step method">Route.calculate()</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step method">History.add()</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step output">render()</div>
+                    </div>
+                    <div class="code-box" style="margin-top: 28px; max-width: 600px;">
+                        <span class="comment">// Each class handles one step</span><br>
+                        <span class="keyword">const</span> <span class="property">coords</span> = <span class="keyword">await</span> Location.<span class="method">geocode</span>(input);<br>
+                        <span class="keyword">const</span> <span class="property">route</span> = <span class="keyword">await</span> Route.<span class="method">calculate</span>(coords);<br>
+                        History.<span class="method">add</span>(route);<br>
+                        Map.<span class="method">render</span>(route);
+                    </div>
+                </div>
+                
+                <!-- SLIDE 9: WHY OOP -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">09</p>
+                    <h2>Why OOP Matters</h2>
+                    <div class="benefits-box">
+                        <div class="benefit-row">
+                            <span class="benefit-key">reusable:</span>
+                            <span class="benefit-val">true</span>
+                            <span class="benefit-comment">// Route works for any coords</span>
+                        </div>
+                        <div class="benefit-row">
+                            <span class="benefit-key">organized:</span>
+                            <span class="benefit-val">true</span>
+                            <span class="benefit-comment">// Each class = one job</span>
+                        </div>
+                        <div class="benefit-row">
+                            <span class="benefit-key">maintainable:</span>
+                            <span class="benefit-val">true</span>
+                            <span class="benefit-comment">// Change export? Edit Route only</span>
+                        </div>
+                        <div class="benefit-row">
+                            <span class="benefit-key">scalable:</span>
+                            <span class="benefit-val">true</span>
+                            <span class="benefit-comment">// Easy to add Traffic, Weather</span>
+                        </div>
+                    </div>
+                    <div class="code-box" style="margin-top: 28px; max-width: 500px;">
+                        <span class="comment">// Result:</span><br>
+                        OOP = <span class="string">"Clean"</span> + <span class="string">"Modular"</span> + <span class="string">"Professional"</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="oop-nav">
+                <button id="oopPrev">← Previous</button>
+                <div class="oop-dots" id="oopDots"></div>
+                <button id="oopNext">Next →</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// MAP SETUP
+const map = L.map('map').setView([33.3128, 44.3615], 12);
+let osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+let satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+let darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+// Alternative lighter dark map
+let darkLightLayer = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+let currentRoute = null;
+let currentMapLayer = osmLayer;
+
+// Add default layer
+osmLayer.addTo(map);
+
+// Function to switch map layer
+function setMapLayer(layer) {
+    if (currentMapLayer) map.removeLayer(currentMapLayer);
+    currentMapLayer = layer;
+    layer.addTo(map);
+}
+
+// DARK MODE
+document.getElementById('darkToggle').onclick = () => {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    document.getElementById('darkToggle').textContent = isDark ? '☀️' : '🌙';
+    localStorage.setItem('darkMode', isDark);
+    
+    // Switch map to dark/light layer (using lighter dark style)
+    setMapLayer(isDark ? darkLightLayer : osmLayer);
+};
+if (localStorage.getItem('darkMode') === 'true') {
+    document.body.classList.add('dark');
+    document.getElementById('darkToggle').textContent = '☀️';
+    setMapLayer(darkLightLayer);
+}
+
+// TABS
+document.querySelectorAll('.tab-btn:not(#oopTabBtn)').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+        if (btn.dataset.tab === 'history') loadHistory();
+        if (btn.dataset.tab === 'favorites') loadFavorites();
+    };
+});
+
+// OOP PRESENTATION
+let currentSlide = 0;
+const totalSlides = 9;
+
+const dotsContainer = document.getElementById('oopDots');
+for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'oop-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goToSlide(i);
+    dotsContainer.appendChild(dot);
+}
+
+function goToSlide(n) {
+    currentSlide = n;
+    document.getElementById('oopSlider').style.transform = `translateX(-${n * 100}%)`;
+    document.querySelectorAll('.oop-dot').forEach((d, i) => d.classList.toggle('active', i === n));
+}
+
+document.getElementById('oopTabBtn').onclick = () => {
+    document.getElementById('oopOverlay').classList.add('active');
+    goToSlide(0);
+};
+
+document.getElementById('oopClose').onclick = () => {
+    document.getElementById('oopOverlay').classList.remove('active');
+};
+
+document.getElementById('oopPrev').onclick = () => {
+    if (currentSlide > 0) goToSlide(currentSlide - 1);
+};
+
+document.getElementById('oopNext').onclick = () => {
+    if (currentSlide < totalSlides - 1) goToSlide(currentSlide + 1);
+};
+
+document.getElementById('sidebarToggle').onclick = () => {
+    const sidebar = document.getElementById('sidebar');
+    const btn = document.getElementById('sidebarToggle');
+    document.body.classList.toggle('sidebar-collapsed');
+    sidebar.classList.toggle('hidden');
+    btn.textContent = sidebar.classList.contains('hidden') ? '▶' : '◀';
+    // Invalidate map size after transition
+    setTimeout(() => map.invalidateSize(), 350);
+};
+
+document.addEventListener('keydown', (e) => {
+    if (!document.getElementById('oopOverlay').classList.contains('active')) return;
+    if (e.key === 'ArrowLeft') document.getElementById('oopPrev').click();
+    if (e.key === 'ArrowRight') document.getElementById('oopNext').click();
+    if (e.key === 'Escape') document.getElementById('oopClose').click();
+});
+
+// HELPERS
+function showError(msg) {
+    const el = document.getElementById('error');
+    el.textContent = '❌ ' + msg;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 5000);
+}
+
+function showSuccess(msg) {
+    const el = document.getElementById('success');
+    el.textContent = '✅ ' + msg;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3000);
+}
+
+function clearMap() {
+    map.eachLayer(layer => {
+        if (layer instanceof L.CircleMarker || layer instanceof L.Polyline || layer instanceof L.Circle) map.removeLayer(layer);
+    });
+}
+
+// MY LOCATION - with high accuracy GPS
+document.getElementById('myLocationBtn').onclick = (e) => {
+    e.preventDefault();
+    if (!navigator.geolocation) { showError('GPS not supported'); return; }
+    
+    // Check if on HTTPS (required for accurate GPS on mobile)
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        showError('⚠️ GPS requires HTTPS. Using IP-based location (less accurate).');
+    }
+    
+    showSuccess('📡 Requesting GPS... Please wait');
+    
+    let bestAccuracy = Infinity;
+    let bestPosition = null;
+    let attempts = 0;
+    let watchId = null;
+    
+    const updateUI = (pos, final = false) => {
+        document.getElementById('origin').value = `${pos.latitude.toFixed(6)},${pos.longitude.toFixed(6)}`;
+        
+        // Clear previous location markers
+        map.eachLayer(layer => {
+            if (layer._myLocationMarker) map.removeLayer(layer);
+        });
+        
+        // Add accuracy circle
+        const accCircle = L.circle([pos.latitude, pos.longitude], { 
+            radius: pos.accuracy, 
+            color: pos.accuracy > 500 ? '#ff6b6b' : '#0066ff', 
+            fillOpacity: 0.1,
+            weight: 1
+        }).addTo(map);
+        accCircle._myLocationMarker = true;
+        
+        // Add location marker
+        const locMarker = L.circleMarker([pos.latitude, pos.longitude], { 
+            radius: 8, 
+            fillColor: pos.accuracy > 500 ? '#ff6b6b' : '#0066ff', 
+            color: '#fff', 
+            weight: 3, 
+            fillOpacity: 1 
+        }).addTo(map);
+        locMarker._myLocationMarker = true;
+        
+        if (pos.accuracy > 500) {
+            locMarker.bindPopup(`⚠️ Low Accuracy Location<br><small>±${Math.round(pos.accuracy)}m (IP-based)</small><br><small style="color:#ff6b6b;">Use phone with GPS for better accuracy</small>`).openPopup();
+        } else {
+            locMarker.bindPopup(`📍 Your Location<br><small>Accuracy: ±${Math.round(pos.accuracy)}m</small>`).openPopup();
+        }
+        
+        map.setView([pos.latitude, pos.longitude], pos.accuracy > 500 ? 14 : 17);
+        
+        if (final) {
+            if (pos.accuracy > 500) {
+                showError(`⚠️ Low accuracy (±${Math.round(pos.accuracy)}m). This is IP-based, not GPS. Try on a phone with GPS enabled.`);
+            } else if (pos.accuracy > 100) {
+                showSuccess(`📍 Location found (±${Math.round(pos.accuracy)}m) - Move outside for better GPS`);
+            } else {
+                showSuccess(`✅ GPS Location found! (±${Math.round(pos.accuracy)}m)`);
+            }
+        }
+    };
+    
+    watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+            attempts++;
+            const { latitude, longitude, accuracy } = pos.coords;
+            
+            console.log(`GPS attempt ${attempts}: accuracy=${accuracy}m`);
+            
+            // Keep the most accurate position
+            if (accuracy < bestAccuracy) {
+                bestAccuracy = accuracy;
+                bestPosition = { latitude, longitude, accuracy };
+                updateUI(bestPosition, false);
+                showSuccess(`📡 GPS accuracy: ±${Math.round(accuracy)}m${accuracy > 100 ? ' (improving...)' : ''}`);
+            }
+            
+            // Accept if accuracy is good enough (<30m) or after 8 attempts
+            if (accuracy < 30 || attempts >= 8) {
+                navigator.geolocation.clearWatch(watchId);
+                updateUI(bestPosition, true);
+            }
+        },
+        (err) => {
+            console.error('GPS error:', err);
+            if (err.code === 1) {
+                showError('❌ Location permission denied. Please allow location access.');
+            } else if (err.code === 2) {
+                showError('❌ GPS unavailable. Make sure location services are enabled.');
+            } else if (err.code === 3) {
+                showError('❌ GPS timeout. Try again outside with clear sky view.');
+            } else {
+                showError(`❌ GPS error: ${err.message}`);
+            }
+        },
+        { 
+            enableHighAccuracy: true, 
+            timeout: 60000,
+            maximumAge: 0
+        }
+    );
+    
+    // Timeout fallback - use best position after 15 seconds
+    setTimeout(() => {
+        if (watchId) {
+            navigator.geolocation.clearWatch(watchId);
+            if (bestPosition) {
+                updateUI(bestPosition, true);
+            } else {
+                showError('❌ Could not get GPS location. Try again outside.');
+            }
+        }
+    }, 15000);
+};
+
+document.getElementById('favGpsBtn').onclick = (e) => {
+    e.preventDefault();
+    if (!navigator.geolocation) { showError('GPS not supported'); return; }
+    showSuccess('Getting precise location...');
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            document.getElementById('favCoords').value = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
+            showSuccess(`Coordinates set! (±${Math.round(pos.coords.accuracy)}m)`);
+        },
+        (err) => showError(`GPS error: ${err.message}`),
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+    );
+};
+
+// PICK ON MAP - More reliable than GPS!
+let pickMode = null; // 'origin' or 'destination'
+
+document.getElementById('pickOriginBtn').onclick = () => {
+    pickMode = 'origin';
+    showSuccess('🗺️ Click on the map to set your ORIGIN location');
+    document.getElementById('map').style.cursor = 'crosshair';
+};
+
+document.getElementById('pickDestBtn').onclick = () => {
+    pickMode = 'destination';
+    showSuccess('🗺️ Click on the map to set your DESTINATION location');
+    document.getElementById('map').style.cursor = 'crosshair';
+};
+
+map.on('click', (e) => {
+    if (!pickMode) return;
+    
+    const { lat, lng } = e.latlng;
+    const coords = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+    
+    if (pickMode === 'origin') {
+        document.getElementById('origin').value = coords;
+        
+        // Add marker
+        map.eachLayer(layer => { if (layer._pickOrigin) map.removeLayer(layer); });
+        const marker = L.circleMarker([lat, lng], { 
+            radius: 10, fillColor: '#16a34a', color: '#fff', weight: 3, fillOpacity: 1 
+        }).addTo(map);
+        marker._pickOrigin = true;
+        marker.bindPopup('🟢 Origin: Your location').openPopup();
+        
+        showSuccess('✅ Origin set! Now pick destination or click Find Route');
+    } else {
+        document.getElementById('destination').value = coords;
+        
+        // Add marker
+        map.eachLayer(layer => { if (layer._pickDest) map.removeLayer(layer); });
+        const marker = L.circleMarker([lat, lng], { 
+            radius: 10, fillColor: '#dc2626', color: '#fff', weight: 3, fillOpacity: 1 
+        }).addTo(map);
+        marker._pickDest = true;
+        marker.bindPopup('🔴 Destination').openPopup();
+        
+        showSuccess('✅ Destination set! Click Find Route');
+    }
+    
+    pickMode = null;
+    document.getElementById('map').style.cursor = '';
+});
+
+// GEOCODING
+async function geocode(addr) {
+    if (/^[-\d.,\s]+$/.test(addr)) {
+        const p = addr.split(',').map(x => parseFloat(x.trim()));
+        if (p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) return [p[1], p[0]];
+    }
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr + ', Baghdad, Iraq')}&limit=1`);
+    const data = await res.json();
+    return data.length ? [parseFloat(data[0].lon), parseFloat(data[0].lat)] : null;
+}
+
+// ROUTE FORM
+document.getElementById('routeForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const origin = document.getElementById('origin').value.trim();
+    const dest = document.getElementById('destination').value.trim();
+    if (!origin || !dest) { showError('Enter origin and destination'); return; }
+    
+    const waypoints = Array.from(document.querySelectorAll('.waypoint-input')).map(i => i.value.trim()).filter(v => v);
+    
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('findBtn').disabled = true;
+    
+    try {
+        const coords = [];
+        for (let addr of [origin, ...waypoints, dest]) {
+            const c = await geocode(addr);
+            if (!c) throw new Error(`Not found: "${addr}"`);
+            coords.push(c);
+        }
+        
+        const url = `https://router.project-osrm.org/route/v1/driving/${coords.map(c => c.join(',')).join(';')}?overview=full&geometries=geojson&steps=true`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.code !== 'Ok') throw new Error('Route not found');
+        
+        const route = data.routes[0];
+        const routeCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+        
+        const directions = [];
+        route.legs?.forEach(leg => leg.steps?.forEach(step => {
+            if (step.maneuver) directions.push({ instruction: `${step.maneuver.type} ${step.maneuver.modifier || ''} on ${step.name || 'road'}`, distance: (step.distance / 1000).toFixed(2) });
+        }));
+        
+        currentRoute = { coordinates: routeCoords, distance: route.distance / 1000, time: Math.round(route.duration / 60), originInput: origin, destInput: dest, directions };
+        
+        clearMap();
+        L.circleMarker([coords[0][1], coords[0][0]], { radius: 10, fillColor: '#4CAF50', color: '#fff', weight: 3, fillOpacity: 0.9 }).addTo(map).bindPopup('🟢 Origin');
+        L.circleMarker([coords[coords.length-1][1], coords[coords.length-1][0]], { radius: 10, fillColor: '#f44336', color: '#fff', weight: 3, fillOpacity: 0.9 }).addTo(map).bindPopup('🔴 Destination');
+        L.polyline(routeCoords, { color: '#2196F3', weight: 5 }).addTo(map);
+        map.fitBounds(L.latLngBounds(routeCoords), { padding: [50, 50] });
+        
+        document.getElementById('distance').textContent = currentRoute.distance.toFixed(1);
+        document.getElementById('time').textContent = currentRoute.time;
+        document.getElementById('routeStats').style.display = 'grid';
+        showSuccess(`Route: ${currentRoute.distance.toFixed(1)} km, ${currentRoute.time} min`);
+        
+        saveHistory(origin, dest, currentRoute.distance, currentRoute.time);
+        document.getElementById('directionsList').innerHTML = directions.slice(0, 15).map((d, i) => `<div class="item-card" style="cursor:default;"><b>${i+1}.</b> ${d.instruction} (${d.distance} km)</div>`).join('') || '<p style="color:#888;">No directions</p>';
+    } catch (err) { showError(err.message); }
+    finally {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('findBtn').disabled = false;
+    }
+};
+
+// WAYPOINTS
+document.getElementById('addWaypointBtn').onclick = () => {
+    const div = document.createElement('div');
+    div.className = 'waypoint-row';
+    div.innerHTML = '<input type="text" class="waypoint-input" placeholder="Stop"><button type="button" class="small-btn danger-btn">✕</button>';
+    div.querySelector('button').onclick = () => div.remove();
+    document.getElementById('waypointsContainer').appendChild(div);
+};
+
+// CLEAR
+document.getElementById('clearBtn').onclick = () => {
+    clearMap();
+    document.getElementById('origin').value = '';
+    document.getElementById('destination').value = '';
+    document.getElementById('waypointsContainer').innerHTML = '';
+    document.getElementById('routeStats').style.display = 'none';
+    currentRoute = null;
+};
+
+// HISTORY
+function saveHistory(o, d, dist, t) {
+    let h = JSON.parse(localStorage.getItem('routeHistory') || '[]');
+    h.unshift({ origin: o, dest: d, distance: dist.toFixed(1), time: t, date: new Date().toLocaleString() });
+    localStorage.setItem('routeHistory', JSON.stringify(h.slice(0, 20)));
+}
+
+function loadHistory() {
+    const h = JSON.parse(localStorage.getItem('routeHistory') || '[]');
+    document.getElementById('historyList').innerHTML = h.length ? h.map(r => `<div class="item-card" onclick="document.getElementById('origin').value='${r.origin}';document.getElementById('destination').value='${r.dest}';document.querySelector('[data-tab=route]').click();"><b>${r.origin}</b> → <b>${r.dest}</b><br><small>${r.distance} km • ${r.time} min</small></div>`).join('') : '<p style="color:#888;">No routes</p>';
+}
+
+document.getElementById('clearHistoryBtn').onclick = () => { localStorage.removeItem('routeHistory'); loadHistory(); showSuccess('Cleared'); };
+
+// FAVORITES
+document.getElementById('saveFavBtn').onclick = () => {
+    const n = document.getElementById('favName').value.trim();
+    const c = document.getElementById('favCoords').value.trim();
+    if (!n || !c) { showError('Enter name and coords'); return; }
+    let f = JSON.parse(localStorage.getItem('favorites') || '[]');
+    f.push({ name: n, coords: c });
+    localStorage.setItem('favorites', JSON.stringify(f));
+    document.getElementById('favName').value = '';
+    document.getElementById('favCoords').value = '';
+    showSuccess('Saved!');
+    loadFavorites();
+};
+
+function loadFavorites() {
+    const f = JSON.parse(localStorage.getItem('favorites') || '[]');
+    document.getElementById('favList').innerHTML = f.length ? f.map((x, i) => `<div class="item-card" onclick="document.getElementById('origin').value='${x.coords}';document.querySelector('[data-tab=route]').click();">📍 <b>${x.name}</b><br><small>${x.coords}</small><button class="small-btn danger-btn" style="float:right;margin-top:-18px;" onclick="event.stopPropagation();deleteFav(${i});">✕</button></div>`).join('') : '<p style="color:#888;">No favorites</p>';
+}
+
+function deleteFav(i) { let f = JSON.parse(localStorage.getItem('favorites') || '[]'); f.splice(i, 1); localStorage.setItem('favorites', JSON.stringify(f)); loadFavorites(); }
+
+// EXPORT
+document.getElementById('exportGeoJSON').onclick = () => exp('geojson');
+document.getElementById('exportGPX').onclick = () => exp('gpx');
+document.getElementById('exportCSV').onclick = () => exp('csv');
+
+function exp(fmt) {
+    if (!currentRoute) { showError('Find route first'); return; }
+    let data, fn, type;
+    if (fmt === 'geojson') { data = JSON.stringify({ type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'LineString', coordinates: currentRoute.coordinates.map(c => [c[1], c[0]]) }, properties: { distance: currentRoute.distance, time: currentRoute.time } }] }, null, 2); fn = 'route.geojson'; type = 'application/json'; }
+    else if (fmt === 'gpx') { data = `<?xml version="1.0"?><gpx version="1.1"><trk><name>Route</name><trkseg>${currentRoute.coordinates.map(c => `<trkpt lat="${c[0]}" lon="${c[1]}"></trkpt>`).join('')}</trkseg></trk></gpx>`; fn = 'route.gpx'; type = 'application/gpx+xml'; }
+    else { data = 'lat,lon\n' + currentRoute.coordinates.map(c => `${c[0]},${c[1]}`).join('\n'); fn = 'route.csv'; type = 'text/csv'; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type })); a.download = fn; a.click();
+    showSuccess(`Exported ${fmt.toUpperCase()}`);
+}
+
+// MAP STYLE
+document.getElementById('mapStyle').onchange = (e) => {
+    [osmLayer, satelliteLayer, darkLayer].forEach(l => map.removeLayer(l));
+    ({ osm: osmLayer, satellite: satelliteLayer, dark: darkLayer })[e.target.value].addTo(map);
+};
+
+// SHARE
+document.getElementById('shareBtn').onclick = () => {
+    if (!currentRoute) { showError('Find route first'); return; }
+    const url = `${location.origin}${location.pathname}?origin=${encodeURIComponent(currentRoute.originInput)}&dest=${encodeURIComponent(currentRoute.destInput)}`;
+    navigator.clipboard.writeText(url).then(() => showSuccess('Link copied!')).catch(() => {});
+    document.getElementById('shareLink').textContent = url;
+};
+
+// URL PARAMS
+window.onload = () => {
+    const p = new URLSearchParams(location.search);
+    if (p.get('origin')) document.getElementById('origin').value = p.get('origin');
+    if (p.get('dest')) document.getElementById('destination').value = p.get('dest');
+    if (p.get('origin') && p.get('dest')) setTimeout(() => document.getElementById('routeForm').dispatchEvent(new Event('submit')), 500);
+};
+</script>
+</body>
+</html>
