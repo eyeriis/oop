@@ -470,11 +470,30 @@ function loadFavorites() {
                 <button class="small-btn danger-btn" style="padding:4px 8px;font-size:10px;" onclick="event.stopPropagation();deleteFav(${i});">✕</button>
             </div>
             <div style="display:flex;gap:6px;margin-top:8px;">
+                <button class="small-btn" style="flex:1;background:#3a7fff;font-size:11px;" onclick="showFavOnMap('${x.coords}', '${x.name}')">👁️ Show</button>
                 <button class="small-btn" style="flex:1;background:#16a34a;font-size:11px;" onclick="useFavAsOrigin('${x.coords}')">🟢 Origin</button>
                 <button class="small-btn" style="flex:1;background:#dc2626;font-size:11px;" onclick="useFavAsDestination('${x.coords}')">🔴 Destination</button>
             </div>
         </div>
     `).join('') : '<p style="color:#888;">No favorites</p>';
+}
+
+function showFavOnMap(coords, name) {
+    const [lat, lon] = coords.split(',').map(c => parseFloat(c.trim()));
+    
+    // Remove previous favorite markers
+    map.eachLayer(layer => { if (layer._showFav) map.removeLayer(layer); });
+    
+    // Add marker
+    const marker = L.circleMarker([lat, lon], { 
+        radius: 12, fillColor: '#f59e0b', color: '#fff', weight: 3, fillOpacity: 1 
+    }).addTo(map);
+    marker._showFav = true;
+    marker.bindPopup(`⭐ <b>${name}</b><br><small>${coords}</small>`).openPopup();
+    
+    // Zoom to location
+    map.setView([lat, lon], 16);
+    showSuccess(`📍 Showing "${name}" on map`);
 }
 
 function useFavAsOrigin(coords) {
