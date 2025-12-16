@@ -14,7 +14,8 @@
         .container { display: flex; height: 100vh; }
         .sidebar { width: 360px; background: #fff; padding: 24px; overflow-y: auto; border-right: 1px solid #eee; transition: margin-left 0.3s ease, transform 0.3s ease; }
         body.dark .sidebar { background: #161616; border-color: #2a2a2a; }
-        
+        Routes
+🌙
         .map-container { flex: 1; position: relative; transition: all 0.3s ease; }
         #map { width: 100%; height: 100%; }
         
@@ -180,19 +181,19 @@
             font-size: 48px;
             font-weight: 500;
             margin-bottom: 24px;
-            color: #ec4899;
+            color: #df307b;
             letter-spacing: -0.5px;
         }
         
         .oop-slide > p:first-of-type:not(.note-box) {
-            color: #999;
+            color: #df307b;
         }
         
         .oop-slide p {
             font-size: 19px;
             max-width: 700px;
             line-height: 1.7;
-            color: #aaa;
+            color: #9ec4db;
             font-weight: 400;
         }
         
@@ -211,7 +212,7 @@
         }
         
         .oop-slide .note-box {
-            color: #666;
+            color: #9ec4db;
             font-size: 15px;
             font-family: 'JetBrains Mono', monospace;
             margin-top: 20px;
@@ -247,7 +248,7 @@
         }
         .oop-pillar:hover { background: #161616; }
         .oop-pillar h4 { color: #fff; margin-bottom: 10px; font-size: 17px; font-weight: 500; }
-        .oop-pillar p { font-size: 14px; color: #777; line-height: 1.6; }
+        .oop-pillar p { font-size: 14px; color: #9ec4db; line-height: 1.6; }
         
         .oop-nav {
             position: absolute;
@@ -261,15 +262,15 @@
         
         .oop-nav button {
             background: transparent !important;
-            border: 1px solid rgba(236, 72, 153, 0.3) !important;
-            color: #ec4899 !important;
+            border: 1px solid rgba(158, 196, 219, 0.3) !important;
+            color: #9ec4db !important;
             padding: 10px 24px;
             font-size: 14px;
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .oop-nav button:hover { border-color: #ec4899 !important; color: #f9a8d4 !important; background: rgba(236, 72, 153, 0.1) !important; }
+        .oop-nav button:hover { border-color: #9ec4db !important; color: #c5dce9 !important; background: rgba(158, 196, 219, 0.1) !important; }
         
         .oop-dots {
             display: flex;
@@ -386,18 +387,18 @@
         <div id="route" class="tab-content active">
             <form id="routeForm">
                 <div class="form-group">
-                    <label>🟢 Origin</label>
+                    <label>Origin</label>
                     <div class="input-row">
                         <input type="text" id="origin" placeholder="Address or lat,lon">
-                        <button type="button" id="myLocationBtn" class="small-btn gps-btn" title="Use GPS">📍</button>
-                        <button type="button" id="pickOriginBtn" class="small-btn" title="Pick on map" style="background:#16a34a;">🗺️</button>
+                        <button type="button" id="myLocationBtn" class="small-btn gps-btn" title="Use GPS">⦿</button>
+                        <button type="button" id="pickOriginBtn" class="small-btn" title="Pick on map" style="background:#16a34a;">◉</button>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>🔴 Destination</label>
+                    <label>Destination</label>
                     <div class="input-row">
                         <input type="text" id="destination" placeholder="Address or lat,lon">
-                        <button type="button" id="pickDestBtn" class="small-btn" title="Pick on map" style="background:#dc2626;">🗺️</button>
+                        <button type="button" id="pickDestBtn" class="small-btn" title="Pick on map" style="background:#dc2626;">◎</button>
                     </div>
                 </div>
                 <div id="waypointsContainer"></div>
@@ -475,7 +476,7 @@
             <div class="oop-slider" id="oopSlider">
                 <!-- SLIDE 1: INTRO -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">01</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">01</p>
                     <h2>Object-Oriented Programming</h2>
                     <p>OOP organizes code into Objects — containers with data (properties) and actions (methods).</p>
                     <div class="code-box">
@@ -490,7 +491,7 @@
                 
                 <!-- SLIDE 2: CLASSES -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">02</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">02</p>
                     <h2>Classes in This App</h2>
                     <div class="class-diagram">
                         <div class="class-card">
@@ -526,7 +527,7 @@
                 
                 <!-- SLIDE 3: 4 PILLARS -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">03</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">03</p>
                     <h2>The 4 Pillars of OOP</h2>
                     <div class="oop-pillar-box">
                         <div class="oop-pillar">
@@ -550,7 +551,7 @@
                 
                 <!-- SLIDE 4: ENCAPSULATION -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">04</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">04</p>
                     <h2>Encapsulation</h2>
                     <p>Each class hides its internal data and exposes only what's necessary.</p>
                     <div class="code-box">
@@ -569,7 +570,7 @@
                 
                 <!-- SLIDE 5: INHERITANCE -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">05</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">05</p>
                     <h2>Inheritance</h2>
                     <p>Child classes inherit properties and methods from parent classes.</p>
                     <div class="code-box">
@@ -588,7 +589,7 @@
                 
                 <!-- SLIDE 6: POLYMORPHISM -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">06</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">06</p>
                     <h2>Polymorphism</h2>
                     <p>Same method name, different behavior based on context.</p>
                     <div class="code-box">
@@ -607,7 +608,7 @@
                 
                 <!-- SLIDE 7: ABSTRACTION -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">07</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">07</p>
                     <h2>Abstraction</h2>
                     <p>Hide complex implementation behind simple interfaces.</p>
                     <div class="code-box">
@@ -626,7 +627,7 @@
                 
                 <!-- SLIDE 8: DATA FLOW -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">08</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">08</p>
                     <h2>Data Flow in This App</h2>
                     <div class="flow-diagram">
                         <div class="flow-step input">userInput</div>
@@ -650,7 +651,7 @@
                 
                 <!-- SLIDE 9: WHY OOP -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #ec4899; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">09</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">09</p>
                     <h2>Why OOP Matters</h2>
                     <div class="benefits-box">
                         <div class="benefit-row">
@@ -817,7 +818,7 @@ document.getElementById('myLocationBtn').onclick = (e) => {
     e.preventDefault();
     if (!navigator.geolocation) { showError('GPS not supported'); return; }
     
-    // Check if on HTTPS (required for accurate GPS on mobile)
+    // Check if on HTTPS (required for accurate GPS on mobile)  
     if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         showError('⚠️ GPS requires HTTPS. Using IP-based location (less accurate).');
     }
