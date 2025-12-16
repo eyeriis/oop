@@ -358,7 +358,7 @@ document.getElementById('routeForm').onsubmit = async (e) => {
         
         // Request alternatives with alternatives=true
         const url = `https://router.project-osrm.org/route/v1/driving/${coords.map(c => c.join(',')).join(';')}?overview=full&geometries=geojson&steps=true&alternatives=true`;
-        const res = await fetch(url);z
+        const res = await fetch(url);
         const data = await res.json();
         if (data.code !== 'Ok') throw new Error('Route not found');
         
