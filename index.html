@@ -31,7 +31,10 @@
                 <div class="form-group">
                     <label>Origin</label>
                     <div class="input-row">
-                        <input type="text" id="origin" placeholder="Address or lat,lon">
+                        <div class="autocomplete-container">
+                            <input type="text" id="origin" placeholder="Address or lat,lon" autocomplete="off">
+                            <div class="autocomplete-dropdown" id="originDropdown"></div>
+                        </div>
                         <button type="button" id="myLocationBtn" class="small-btn gps-btn" title="Use GPS">⦿</button>
                         <button type="button" id="pickOriginBtn" class="small-btn" title="Pick on map" style="background:#16a34a;">◉</button>
                     </div>
@@ -39,7 +42,10 @@
                 <div class="form-group">
                     <label>Destination</label>
                     <div class="input-row">
-                        <input type="text" id="destination" placeholder="Address or lat,lon">
+                        <div class="autocomplete-container">
+                            <input type="text" id="destination" placeholder="Address or lat,lon" autocomplete="off">
+                            <div class="autocomplete-dropdown" id="destDropdown"></div>
+                        </div>
                         <button type="button" id="pickDestBtn" class="small-btn" title="Pick on map" style="background:#dc2626;">◎</button>
                     </div>
                 </div>
@@ -54,6 +60,10 @@
             <div class="stats" id="routeStats" style="display: none;">
                 <div class="stat"><div class="stat-value" id="distance">0</div><div class="stat-label">Distance (km)</div></div>
                 <div class="stat"><div class="stat-value" id="time">0</div><div class="stat-label">Time (min)</div></div>
+            </div>
+            <div class="route-alternatives" id="routeAlternatives">
+                <label>Alternative Routes</label>
+                <div id="altRoutesList"></div>
             </div>
         </div>
         
@@ -88,6 +98,32 @@
         
         <!-- TOOLS TAB -->
         <div id="tools" class="tab-content">
+            <h3>🚦 Traffic Layer</h3>
+            <div class="traffic-toggle">
+                <input type="checkbox" id="trafficToggle">
+                <label for="trafficToggle" style="text-transform: none; font-size: 13px; margin: 0;">Show simulated traffic conditions</label>
+            </div>
+            <div class="traffic-legend" id="trafficLegend" style="display: none;">
+                <div class="traffic-legend-item"><div class="traffic-dot green"></div>Light</div>
+                <div class="traffic-legend-item"><div class="traffic-dot yellow"></div>Moderate</div>
+                <div class="traffic-legend-item"><div class="traffic-dot red"></div>Heavy</div>
+            </div>
+            <hr>
+            <h3>📍 Points of Interest</h3>
+            <div class="poi-section">
+                <div class="poi-toggle">
+                    <input type="checkbox" id="poiToggle">
+                    <label for="poiToggle" style="text-transform: none; font-size: 13px; margin: 0;">Show POIs along route</label>
+                </div>
+                <div class="poi-categories" id="poiCategories" style="display: none;">
+                    <div class="poi-chip active" data-category="fuel">⛽ Fuel</div>
+                    <div class="poi-chip active" data-category="restaurant">🍽️ Food</div>
+                    <div class="poi-chip" data-category="hospital">🏥 Hospital</div>
+                    <div class="poi-chip" data-category="atm">🏧 ATM</div>
+                    <div class="poi-chip" data-category="parking">🅿️ Parking</div>
+                </div>
+            </div>
+            <hr>
             <h3>📤 Export Route</h3>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button id="exportGeoJSON" class="small-btn">GeoJSON</button>

@@ -325,6 +325,9 @@ document.getElementById('routeForm').onsubmit = async (e) => {
     document.getElementById('loading').style.display = 'block';
     document.getElementById('findBtn').disabled = true;
     
+    // Show loading skeleton
+    showLoadingSkeleton();
+    
     try {
         const coords = [];
         for (let addr of [origin, ...waypoints, dest]) {
@@ -333,10 +336,14 @@ document.getElementById('routeForm').onsubmit = async (e) => {
             coords.push(c);
         }
         
-        const url = `https://router.project-osrm.org/route/v1/driving/${coords.map(c => c.join(',')).join(';')}?overview=full&geometries=geojson&steps=true`;
+        // Request alternatives with alternatives=true
+        const url = `https://router.project-osrm.org/route/v1/driving/${coords.map(c => c.join(',')).join(';')}?overview=full&geometries=geojson&steps=true&alternatives=true`;
         const res = await fetch(url);
         const data = await res.json();
         if (data.code !== 'Ok') throw new Error('Route not found');
+        
+        // Restore stats UI before updating
+        restoreStatsUI();
         
         const route = data.routes[0];
         const routeCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
@@ -358,6 +365,14 @@ document.getElementById('routeForm').onsubmit = async (e) => {
         document.getElementById('time').textContent = currentRoute.time;
         document.getElementById('routeStats').style.display = 'grid';
         showSuccess(`Route: ${currentRoute.distance.toFixed(1)} km, ${currentRoute.time} min`);
+        
+        // Show route alternatives if available
+        showRouteAlternatives(data.routes, coords);
+        
+        // Fetch POIs if enabled
+        if (poiEnabled) {
+            fetchPOIsAlongRoute();
+        }
         
         saveHistory(origin, dest, currentRoute.distance, currentRoute.time);
         document.getElementById('directionsList').innerHTML = directions.slice(0, 15).map((d, i) => `<div class="item-card" style="cursor:default;"><b>${i+1}.</b> ${d.instruction} (${d.distance} km)</div>`).join('') || '<p style="color:#888;">No directions</p>';
@@ -384,7 +399,15 @@ document.getElementById('clearBtn').onclick = () => {
     document.getElementById('destination').value = '';
     document.getElementById('waypointsContainer').innerHTML = '';
     document.getElementById('routeStats').style.display = 'none';
+    document.getElementById('routeAlternatives').classList.remove('active');
     currentRoute = null;
+    
+    // Clear alternative route polylines
+    altRoutePolylines.forEach(p => map.removeLayer(p));
+    altRoutePolylines = [];
+    
+    // Clear POI markers
+    clearPOIMarkers();
 };
 
 // HISTORY
@@ -458,3 +481,377 @@ window.onload = () => {
     if (p.get('dest')) document.getElementById('destination').value = p.get('dest');
     if (p.get('origin') && p.get('dest')) setTimeout(() => document.getElementById('routeForm').dispatchEvent(new Event('submit')), 500);
 };
+
+// ========================================
+// FEATURE: AUTOCOMPLETE SEARCH
+// ========================================
+let autocompleteTimeout = null;
+const AUTOCOMPLETE_DELAY = 300; // ms debounce
+
+function setupAutocomplete(inputId, dropdownId) {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    
+    input.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        
+        // Clear previous timeout
+        if (autocompleteTimeout) clearTimeout(autocompleteTimeout);
+        
+        // Hide dropdown if query is too short or looks like coordinates
+        if (query.length < 3 || /^[-\d.,\s]+$/.test(query)) {
+            dropdown.classList.remove('active');
+            return;
+        }
+        
+        // Debounce the API call
+        autocompleteTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Baghdad, Iraq')}&limit=5&addressdetails=1`);
+                const data = await res.json();
+                
+                if (data.length === 0) {
+                    dropdown.classList.remove('active');
+                    return;
+                }
+                
+                dropdown.innerHTML = data.map(item => `
+                    <div class="autocomplete-item" data-lat="${item.lat}" data-lon="${item.lon}">
+                        <strong>${item.display_name.split(',')[0]}</strong>
+                        <small>${item.display_name.split(',').slice(1, 3).join(',')}</small>
+                    </div>
+                `).join('');
+                
+                dropdown.classList.add('active');
+                
+                // Add click handlers
+                dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const lat = item.dataset.lat;
+                        const lon = item.dataset.lon;
+                        input.value = `${parseFloat(lat).toFixed(6)},${parseFloat(lon).toFixed(6)}`;
+                        dropdown.classList.remove('active');
+                        
+                        // Show marker on map
+                        const markerColor = inputId === 'origin' ? '#16a34a' : '#dc2626';
+                        const markerProp = inputId === 'origin' ? '_autoOrigin' : '_autoDest';
+                        
+                        map.eachLayer(layer => { if (layer[markerProp]) map.removeLayer(layer); });
+                        const marker = L.circleMarker([lat, lon], { 
+                            radius: 8, fillColor: markerColor, color: '#fff', weight: 2, fillOpacity: 1 
+                        }).addTo(map);
+                        marker[markerProp] = true;
+                        map.setView([lat, lon], 15);
+                    });
+                });
+            } catch (err) {
+                console.error('Autocomplete error:', err);
+            }
+        }, AUTOCOMPLETE_DELAY);
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+}
+
+// Initialize autocomplete for both inputs
+setupAutocomplete('origin', 'originDropdown');
+setupAutocomplete('destination', 'destDropdown');
+
+// ========================================
+// FEATURE: LOADING SKELETON
+// ========================================
+function showLoadingSkeleton() {
+    document.getElementById('routeStats').style.display = 'grid';
+    document.getElementById('routeStats').innerHTML = `
+        <div class="stat skeleton-loading skeleton-stat"></div>
+        <div class="stat skeleton-loading skeleton-stat"></div>
+    `;
+    
+    document.getElementById('directionsList').innerHTML = `
+        <div class="skeleton-directions skeleton-loading">
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+        </div>
+    `;
+}
+
+function restoreStatsUI() {
+    document.getElementById('routeStats').innerHTML = `
+        <div class="stat"><div class="stat-value" id="distance">0</div><div class="stat-label">Distance (km)</div></div>
+        <div class="stat"><div class="stat-value" id="time">0</div><div class="stat-label">Time (min)</div></div>
+    `;
+}
+
+// ========================================
+// FEATURE: ROUTE ALTERNATIVES
+// ========================================
+let allRoutes = [];
+let altRoutePolylines = [];
+
+function showRouteAlternatives(routes, coords) {
+    if (routes.length <= 1) {
+        document.getElementById('routeAlternatives').classList.remove('active');
+        return;
+    }
+    
+    allRoutes = routes;
+    const container = document.getElementById('altRoutesList');
+    
+    container.innerHTML = routes.map((route, i) => {
+        const dist = (route.distance / 1000).toFixed(1);
+        const time = Math.round(route.duration / 60);
+        const isFastest = i === 0;
+        return `
+            <div class="alt-route-card ${i === 0 ? 'selected' : ''}" data-index="${i}">
+                <div class="alt-label">${isFastest ? '⚡ Fastest' : `Alternative ${i}`}</div>
+                <div class="alt-stats">${dist} km • ${time} min</div>
+            </div>
+        `;
+    }).join('');
+    
+    document.getElementById('routeAlternatives').classList.add('active');
+    
+    // Draw all routes
+    drawAlternativeRoutes(routes, coords, 0);
+    
+    // Add click handlers
+    container.querySelectorAll('.alt-route-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const idx = parseInt(card.dataset.index);
+            container.querySelectorAll('.alt-route-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            
+            selectRoute(routes[idx], idx, coords);
+            drawAlternativeRoutes(routes, coords, idx);
+        });
+    });
+}
+
+function drawAlternativeRoutes(routes, coords, selectedIndex) {
+    // Clear previous alt route polylines
+    altRoutePolylines.forEach(p => map.removeLayer(p));
+    altRoutePolylines = [];
+    
+    // Draw alternatives first (behind)
+    routes.forEach((route, i) => {
+        if (i === selectedIndex) return;
+        const routeCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+        const polyline = L.polyline(routeCoords, { 
+            color: '#9ca3af', weight: 4, opacity: 0.5, dashArray: '10, 10' 
+        }).addTo(map);
+        altRoutePolylines.push(polyline);
+    });
+    
+    // Draw selected route on top
+    const selectedRoute = routes[selectedIndex];
+    const routeCoords = selectedRoute.geometry.coordinates.map(c => [c[1], c[0]]);
+    const polyline = L.polyline(routeCoords, { color: '#2196F3', weight: 5 }).addTo(map);
+    altRoutePolylines.push(polyline);
+}
+
+function selectRoute(route, index, coords) {
+    const routeCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+    currentRoute = {
+        coordinates: routeCoords,
+        distance: route.distance / 1000,
+        time: Math.round(route.duration / 60),
+        originInput: document.getElementById('origin').value,
+        destInput: document.getElementById('destination').value,
+        directions: []
+    };
+    
+    // Update stats
+    document.getElementById('distance').textContent = currentRoute.distance.toFixed(1);
+    document.getElementById('time').textContent = currentRoute.time;
+    
+    // Update directions
+    const directions = [];
+    route.legs?.forEach(leg => leg.steps?.forEach(step => {
+        if (step.maneuver) directions.push({
+            instruction: `${step.maneuver.type} ${step.maneuver.modifier || ''} on ${step.name || 'road'}`,
+            distance: (step.distance / 1000).toFixed(2)
+        });
+    }));
+    currentRoute.directions = directions;
+    document.getElementById('directionsList').innerHTML = directions.slice(0, 15).map((d, i) => 
+        `<div class="item-card" style="cursor:default;"><b>${i+1}.</b> ${d.instruction} (${d.distance} km)</div>`
+    ).join('') || '<p style="color:#888;">No directions</p>';
+}
+
+// ========================================
+// FEATURE: TRAFFIC LAYER (Simulated)
+// ========================================
+let trafficLayer = null;
+let trafficEnabled = false;
+
+document.getElementById('trafficToggle').addEventListener('change', (e) => {
+    trafficEnabled = e.target.checked;
+    document.getElementById('trafficLegend').style.display = trafficEnabled ? 'flex' : 'none';
+    
+    if (trafficEnabled) {
+        showTrafficLayer();
+    } else {
+        if (trafficLayer) {
+            map.removeLayer(trafficLayer);
+            trafficLayer = null;
+        }
+    }
+});
+
+function showTrafficLayer() {
+    if (trafficLayer) map.removeLayer(trafficLayer);
+    
+    // Simulated traffic data for Baghdad
+    const trafficSegments = [
+        // Tahrir Square area - usually heavy
+        { coords: [[33.3400, 44.3850], [33.3380, 44.3920], [33.3350, 44.4000]], level: 'heavy' },
+        // Karrada - moderate
+        { coords: [[33.3100, 44.4000], [33.3050, 44.4100], [33.3000, 44.4200]], level: 'moderate' },
+        // Palestine Street - heavy
+        { coords: [[33.3500, 44.4100], [33.3550, 44.4200], [33.3600, 44.4300]], level: 'heavy' },
+        // Airport Road - light
+        { coords: [[33.2800, 44.2500], [33.2700, 44.2300], [33.2600, 44.2100]], level: 'light' },
+        // Mansour - moderate
+        { coords: [[33.3200, 44.3600], [33.3150, 44.3500], [33.3100, 44.3400]], level: 'moderate' },
+        // Sadr City - heavy
+        { coords: [[33.4000, 44.4300], [33.4050, 44.4400], [33.4100, 44.4500]], level: 'heavy' },
+        // Jadiriya - light
+        { coords: [[33.2800, 44.3900], [33.2850, 44.4000], [33.2900, 44.4100]], level: 'light' }
+    ];
+    
+    const colors = { light: '#16a34a', moderate: '#f59e0b', heavy: '#dc2626' };
+    
+    trafficLayer = L.layerGroup();
+    trafficSegments.forEach(seg => {
+        L.polyline(seg.coords, {
+            color: colors[seg.level],
+            weight: 6,
+            opacity: 0.7
+        }).addTo(trafficLayer);
+    });
+    trafficLayer.addTo(map);
+}
+
+// ========================================
+// FEATURE: POI MARKERS ALONG ROUTE
+// ========================================
+let poiMarkers = [];
+let poiEnabled = false;
+let activeCategories = ['fuel', 'restaurant'];
+
+document.getElementById('poiToggle').addEventListener('change', (e) => {
+    poiEnabled = e.target.checked;
+    document.getElementById('poiCategories').style.display = poiEnabled ? 'flex' : 'none';
+    
+    if (poiEnabled && currentRoute) {
+        fetchPOIsAlongRoute();
+    } else {
+        clearPOIMarkers();
+    }
+});
+
+// POI category toggle
+document.querySelectorAll('.poi-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+        chip.classList.toggle('active');
+        const category = chip.dataset.category;
+        
+        if (chip.classList.contains('active')) {
+            if (!activeCategories.includes(category)) activeCategories.push(category);
+        } else {
+            activeCategories = activeCategories.filter(c => c !== category);
+        }
+        
+        if (poiEnabled && currentRoute) {
+            fetchPOIsAlongRoute();
+        }
+    });
+});
+
+function clearPOIMarkers() {
+    poiMarkers.forEach(m => map.removeLayer(m));
+    poiMarkers = [];
+}
+
+async function fetchPOIsAlongRoute() {
+    if (!currentRoute || activeCategories.length === 0) {
+        clearPOIMarkers();
+        return;
+    }
+    
+    clearPOIMarkers();
+    
+    // Sample points along the route
+    const routeCoords = currentRoute.coordinates;
+    const samplePoints = [];
+    const step = Math.max(1, Math.floor(routeCoords.length / 5));
+    for (let i = 0; i < routeCoords.length; i += step) {
+        samplePoints.push(routeCoords[i]);
+    }
+    
+    const categoryMapping = {
+        fuel: 'amenity=fuel',
+        restaurant: 'amenity=restaurant|amenity=fast_food|amenity=cafe',
+        hospital: 'amenity=hospital|amenity=clinic|amenity=pharmacy',
+        atm: 'amenity=atm|amenity=bank',
+        parking: 'amenity=parking'
+    };
+    
+    const icons = {
+        fuel: '⛽',
+        restaurant: '🍽️',
+        hospital: '🏥',
+        atm: '🏧',
+        parking: '🅿️'
+    };
+    
+    // Query Overpass for POIs near route
+    for (const category of activeCategories) {
+        const queries = categoryMapping[category].split('|');
+        
+        for (const point of samplePoints.slice(0, 3)) { // Limit queries
+            try {
+                const lat = point[0];
+                const lon = point[1];
+                const radius = 500; // 500m radius
+                
+                // Use Nominatim for POI search (simpler than Overpass)
+                const query = category === 'fuel' ? 'gas station' : 
+                              category === 'restaurant' ? 'restaurant' :
+                              category === 'hospital' ? 'hospital' :
+                              category === 'atm' ? 'atm bank' : 'parking';
+                
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=3&bounded=1&viewbox=${lon-0.01},${lat+0.01},${lon+0.01},${lat-0.01}`);
+                const data = await res.json();
+                
+                data.forEach(poi => {
+                    // Check if already added (avoid duplicates)
+                    const exists = poiMarkers.some(m => 
+                        Math.abs(m.getLatLng().lat - poi.lat) < 0.0001 && 
+                        Math.abs(m.getLatLng().lng - poi.lon) < 0.0001
+                    );
+                    if (exists) return;
+                    
+                    const marker = L.marker([poi.lat, poi.lon], {
+                        icon: L.divIcon({
+                            html: `<div style="font-size:20px;text-align:center;">${icons[category]}</div>`,
+                            className: 'poi-icon',
+                            iconSize: [30, 30]
+                        })
+                    }).addTo(map);
+                    
+                    marker.bindPopup(`<b>${icons[category]} ${poi.display_name.split(',')[0]}</b><br><small>${category}</small>`);
+                    poiMarkers.push(marker);
+                });
+            } catch (err) {
+                console.error('POI fetch error:', err);
+            }
+        }
+    }
+}
