@@ -153,24 +153,9 @@
             <div class="oop-close" id="oopClose">×</div>
             
             <div class="oop-slider" id="oopSlider">
-                <!-- SLIDE 1: INTRO -->
+                <!-- SLIDE 1: CLASSES -->
                 <div class="oop-slide">
                     <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">01</p>
-                    <h2>Object-Oriented Programming</h2>
-                    <p>OOP organizes code into Objects — containers with data (properties) and actions (methods).</p>
-                    <div class="code-box">
-                        <span class="comment">// An object bundles data + behavior</span><br>
-                        <span class="keyword">class</span> <span class="class-name">Route</span> {<br>
-                        &nbsp;&nbsp;<span class="property">distance</span> = <span class="string">0</span>;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Data</span><br>
-                        &nbsp;&nbsp;<span class="method">calculate</span>() { ... }&nbsp;&nbsp;<span class="comment">// Behavior</span><br>
-                        }
-                    </div>
-                    <p class="note-box">→ This app uses OOP to organize routing, locations, and history.</p>
-                </div>
-                
-                <!-- SLIDE 2: CLASSES -->
-                <div class="oop-slide">
-                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">02</p>
                     <h2>Classes in This App</h2>
                     <div class="class-diagram">
                         <div class="class-card">
@@ -192,7 +177,7 @@
                             <div class="label">Properties</div>
                             <div class="props">name, lat, lon, category</div>
                             <div class="label">Methods</div>
-                            <div class="methods">save(), delete(), useAsOrigin()</div>
+                            <div class="methods">save(), delete(), useAsOrigin(), useAsDestination()</div>
                         </div>
                         <div class="class-card">
                             <h4>History</h4>
@@ -204,9 +189,9 @@
                     </div>
                 </div>
                 
-                <!-- SLIDE 3: 4 PILLARS -->
+                <!-- SLIDE 2: 4 PILLARS -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">03</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">02</p>
                     <h2>The 4 Pillars of OOP</h2>
                     <div class="oop-pillar-box">
                         <div class="oop-pillar">
@@ -228,9 +213,9 @@
                     </div>
                 </div>
                 
-                <!-- SLIDE 4: ENCAPSULATION -->
+                <!-- SLIDE 3: ENCAPSULATION -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">04</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">03</p>
                     <h2>Encapsulation</h2>
                     <p>Each class hides its internal data and exposes only what's necessary.</p>
                     <div class="code-box">
@@ -247,9 +232,9 @@
                     <p class="note-box">→ User calls route.export('gpx') without knowing internal logic</p>
                 </div>
                 
-                <!-- SLIDE 5: INHERITANCE -->
+                <!-- SLIDE 4: INHERITANCE -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">05</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">04</p>
                     <h2>Inheritance</h2>
                     <p>Child classes inherit properties and methods from parent classes.</p>
                     <div class="code-box">
@@ -266,9 +251,9 @@
                     <p class="note-box">→ Favorite reuses Location's code without rewriting it</p>
                 </div>
                 
-                <!-- SLIDE 6: POLYMORPHISM -->
+                <!-- SLIDE 5: POLYMORPHISM -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">06</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">05</p>
                     <h2>Polymorphism</h2>
                     <p>Same method name, different behavior based on context.</p>
                     <div class="code-box">
@@ -285,9 +270,9 @@
                     <p class="note-box">→ One export() method, three different outputs</p>
                 </div>
                 
-                <!-- SLIDE 7: ABSTRACTION -->
+                <!-- SLIDE 6: ABSTRACTION -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">07</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">06</p>
                     <h2>Abstraction</h2>
                     <p>Hide complex implementation behind simple interfaces.</p>
                     <div class="code-box">
@@ -304,9 +289,9 @@
                     <p class="note-box">→ You click "Find Route" — all complexity is hidden</p>
                 </div>
                 
-                <!-- SLIDE 8: DATA FLOW -->
+                <!-- SLIDE 7: DATA FLOW -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">08</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">07</p>
                     <h2>Data Flow in This App</h2>
                     <div class="flow-diagram">
                         <div class="flow-step input">userInput</div>
@@ -328,9 +313,9 @@
                     </div>
                 </div>
                 
-                <!-- SLIDE 9: WHY OOP -->
+                <!-- SLIDE 8: WHY OOP -->
                 <div class="oop-slide">
-                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">09</p>
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">08</p>
                     <h2>Why OOP Matters</h2>
                     <div class="benefits-box">
                         <div class="benefit-row">

@@ -50,7 +50,7 @@ document.querySelectorAll('.tab-btn:not(#oopTabBtn)').forEach(btn => {
 
 // OOP PRESENTATION
 let currentSlide = 0;
-const totalSlides = 9;
+const totalSlides = 8;
 
 const dotsContainer = document.getElementById('oopDots');
 for (let i = 0; i < totalSlides; i++) {
@@ -460,7 +460,33 @@ document.getElementById('saveFavBtn').onclick = () => {
 
 function loadFavorites() {
     const f = JSON.parse(localStorage.getItem('favorites') || '[]');
-    document.getElementById('favList').innerHTML = f.length ? f.map((x, i) => `<div class="item-card" onclick="document.getElementById('origin').value='${x.coords}';document.querySelector('[data-tab=route]').click();">📍 <b>${x.name}</b><br><small>${x.coords}</small><button class="small-btn danger-btn" style="float:right;margin-top:-18px;" onclick="event.stopPropagation();deleteFav(${i});">✕</button></div>`).join('') : '<p style="color:#888;">No favorites</p>';
+    document.getElementById('favList').innerHTML = f.length ? f.map((x, i) => `
+        <div class="item-card" style="cursor:default;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+                <div>
+                    <b>📍 ${x.name}</b><br>
+                    <small style="color:#888;">${x.coords}</small>
+                </div>
+                <button class="small-btn danger-btn" style="padding:4px 8px;font-size:10px;" onclick="event.stopPropagation();deleteFav(${i});">✕</button>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+                <button class="small-btn" style="flex:1;background:#16a34a;font-size:11px;" onclick="useFavAsOrigin('${x.coords}')">🟢 Origin</button>
+                <button class="small-btn" style="flex:1;background:#dc2626;font-size:11px;" onclick="useFavAsDestination('${x.coords}')">🔴 Destination</button>
+            </div>
+        </div>
+    `).join('') : '<p style="color:#888;">No favorites</p>';
+}
+
+function useFavAsOrigin(coords) {
+    document.getElementById('origin').value = coords;
+    document.querySelector('[data-tab=route]').click();
+    showSuccess('✅ Origin set from favorite!');
+}
+
+function useFavAsDestination(coords) {
+    document.getElementById('destination').value = coords;
+    document.querySelector('[data-tab=route]').click();
+    showSuccess('✅ Destination set from favorite!');
 }
 
 function deleteFav(i) { let f = JSON.parse(localStorage.getItem('favorites') || '[]'); f.splice(i, 1); localStorage.setItem('favorites', JSON.stringify(f)); loadFavorites(); }
