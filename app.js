@@ -395,7 +395,11 @@ document.getElementById('routeForm').onsubmit = async (e) => {
         clearMap();
         L.circleMarker([coords[0][1], coords[0][0]], { radius: 10, fillColor: '#4CAF50', color: '#fff', weight: 3, fillOpacity: 0.9 }).addTo(map).bindPopup('🟢 Origin');
         L.circleMarker([coords[coords.length-1][1], coords[coords.length-1][0]], { radius: 10, fillColor: '#f44336', color: '#fff', weight: 3, fillOpacity: 0.9 }).addTo(map).bindPopup('🔴 Destination');
-        L.polyline(routeCoords, { color: '#2196F3', weight: 5 }).addTo(map);
+        
+        // Draw initial route (will be managed by showRouteAlternatives if alternatives exist)
+        const initialPolyline = L.polyline(routeCoords, { color: '#2196F3', weight: 5 }).addTo(map);
+        altRoutePolylines = [initialPolyline]; // Track it so it gets cleared when switching alternatives
+        
         map.fitBounds(L.latLngBounds(routeCoords), { padding: [50, 50] });
         
         document.getElementById('distance').textContent = currentRoute.distance.toFixed(1);
@@ -527,21 +531,6 @@ function useFavAsDestination(coords, name) {
 }
 
 function deleteFav(i) { let f = JSON.parse(localStorage.getItem('favorites') || '[]'); f.splice(i, 1); localStorage.setItem('favorites', JSON.stringify(f)); loadFavorites(); }
-
-// EXPORT
-document.getElementById('exportGeoJSON').onclick = () => exp('geojson');
-document.getElementById('exportGPX').onclick = () => exp('gpx');
-document.getElementById('exportCSV').onclick = () => exp('csv');
-
-function exp(fmt) {
-    if (!currentRoute) { showError('Find route first'); return; }
-    let data, fn, type;
-    if (fmt === 'geojson') { data = JSON.stringify({ type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'LineString', coordinates: currentRoute.coordinates.map(c => [c[1], c[0]]) }, properties: { distance: currentRoute.distance, time: currentRoute.time } }] }, null, 2); fn = 'route.geojson'; type = 'application/json'; }
-    else if (fmt === 'gpx') { data = `<?xml version="1.0"?><gpx version="1.1"><trk><name>Route</name><trkseg>${currentRoute.coordinates.map(c => `<trkpt lat="${c[0]}" lon="${c[1]}"></trkpt>`).join('')}</trkseg></trk></gpx>`; fn = 'route.gpx'; type = 'application/gpx+xml'; }
-    else { data = 'lat,lon\n' + currentRoute.coordinates.map(c => `${c[0]},${c[1]}`).join('\n'); fn = 'route.csv'; type = 'text/csv'; }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type })); a.download = fn; a.click();
-    showSuccess(`Exported ${fmt.toUpperCase()}`);
-}
 
 // MAP STYLE
 document.getElementById('mapStyle').onchange = (e) => {
@@ -765,60 +754,6 @@ function selectRoute(route, index, coords) {
     document.getElementById('directionsList').innerHTML = directions.slice(0, 15).map((d, i) => 
         `<div class="item-card" style="cursor:default;"><b>${i+1}.</b> ${d.instruction} (${d.distance} km)</div>`
     ).join('') || '<p style="color:#888;">No directions</p>';
-}
-
-// ========================================
-// FEATURE: TRAFFIC LAYER (Simulated)
-// ========================================
-let trafficLayer = null;
-let trafficEnabled = false;
-
-document.getElementById('trafficToggle').addEventListener('change', (e) => {
-    trafficEnabled = e.target.checked;
-    document.getElementById('trafficLegend').style.display = trafficEnabled ? 'flex' : 'none';
-    
-    if (trafficEnabled) {
-        showTrafficLayer();
-    } else {
-        if (trafficLayer) {
-            map.removeLayer(trafficLayer);
-            trafficLayer = null;
-        }
-    }
-});
-
-function showTrafficLayer() {
-    if (trafficLayer) map.removeLayer(trafficLayer);
-    
-    // Simulated traffic data for Baghdad
-    const trafficSegments = [
-        // Tahrir Square area - usually heavy
-        { coords: [[33.3400, 44.3850], [33.3380, 44.3920], [33.3350, 44.4000]], level: 'heavy' },
-        // Karrada - moderate
-        { coords: [[33.3100, 44.4000], [33.3050, 44.4100], [33.3000, 44.4200]], level: 'moderate' },
-        // Palestine Street - heavy
-        { coords: [[33.3500, 44.4100], [33.3550, 44.4200], [33.3600, 44.4300]], level: 'heavy' },
-        // Airport Road - light
-        { coords: [[33.2800, 44.2500], [33.2700, 44.2300], [33.2600, 44.2100]], level: 'light' },
-        // Mansour - moderate
-        { coords: [[33.3200, 44.3600], [33.3150, 44.3500], [33.3100, 44.3400]], level: 'moderate' },
-        // Sadr City - heavy
-        { coords: [[33.4000, 44.4300], [33.4050, 44.4400], [33.4100, 44.4500]], level: 'heavy' },
-        // Jadiriya - light
-        { coords: [[33.2800, 44.3900], [33.2850, 44.4000], [33.2900, 44.4100]], level: 'light' }
-    ];
-    
-    const colors = { light: '#16a34a', moderate: '#f59e0b', heavy: '#dc2626' };
-    
-    trafficLayer = L.layerGroup();
-    trafficSegments.forEach(seg => {
-        L.polyline(seg.coords, {
-            color: colors[seg.level],
-            weight: 6,
-            opacity: 0.7
-        }).addTo(trafficLayer);
-    });
-    trafficLayer.addTo(map);
 }
 
 // ========================================

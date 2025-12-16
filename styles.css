@@ -492,9 +492,24 @@ body.dark .alt-route-card .alt-stats { color: #888; }
     height: 10px;
     border-radius: 50%;
 }
-.traffic-dot.green { background: #16a34a; }
-.traffic-dot.yellow { background: #f59e0b; }
-.traffic-dot.red { background: #dc2626; }
+.traffic-dot.green { background: #22c55e; }
+.traffic-dot.yellow { background: #eab308; }
+.traffic-dot.red { background: #ef4444; }
+
+/* Traffic Tooltip */
+.traffic-tooltip {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border: none !important;
+    border-radius: 4px !important;
+    color: #fff !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    padding: 4px 8px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+}
+.traffic-tooltip::before {
+    border-top-color: rgba(0, 0, 0, 0.8) !important;
+}
 
 /* POI MARKERS */
 .poi-section {
