@@ -1,71 +1,42 @@
-/* ============================================
-   Baghdad Streets - Main Application
-   ============================================ */
+// Baghdad Route Finder - Application Logic
 
-// ============================================
-// Map Initialization
-// ============================================
-const map = L.map('map').setView([33.3152, 44.3661], 12);
-
-// Map Layers
-const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap'
-});
-
-const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 19,
-    attribution: '© Esri'
-});
-
-const darkLayer = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19
-});
-
-const darkLightLayer = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19
-});
-
-// State
+// MAP SETUP
+const map = L.map('map').setView([33.3128, 44.3615], 12);
+let osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+let satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+let darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+// Alternative lighter dark map
+let darkLightLayer = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
 let currentRoute = null;
 let currentMapLayer = osmLayer;
-let pickMode = null;
-let currentSlide = 0;
-const totalSlides = 9;
 
 // Add default layer
 osmLayer.addTo(map);
 
-// ============================================
-// Map Layer Functions
-// ============================================
+// Function to switch map layer
 function setMapLayer(layer) {
     if (currentMapLayer) map.removeLayer(currentMapLayer);
     currentMapLayer = layer;
     layer.addTo(map);
 }
 
-// ============================================
-// Dark Mode
-// ============================================
+// DARK MODE
 document.getElementById('darkToggle').onclick = () => {
     document.body.classList.toggle('dark');
     const isDark = document.body.classList.contains('dark');
     document.getElementById('darkToggle').textContent = isDark ? '☀️' : '🌙';
     localStorage.setItem('darkMode', isDark);
+    
+    // Switch map to dark/light layer (using lighter dark style)
     setMapLayer(isDark ? darkLightLayer : osmLayer);
 };
-
-// Load dark mode preference
 if (localStorage.getItem('darkMode') === 'true') {
     document.body.classList.add('dark');
     document.getElementById('darkToggle').textContent = '☀️';
     setMapLayer(darkLightLayer);
 }
 
-// ============================================
-// Tabs
-// ============================================
+// TABS
 document.querySelectorAll('.tab-btn:not(#oopTabBtn)').forEach(btn => {
     btn.onclick = () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -77,12 +48,11 @@ document.querySelectorAll('.tab-btn:not(#oopTabBtn)').forEach(btn => {
     };
 });
 
-// ============================================
-// OOP Presentation
-// ============================================
-const dotsContainer = document.getElementById('oopDots');
+// OOP PRESENTATION
+let currentSlide = 0;
+const totalSlides = 9;
 
-// Create dots
+const dotsContainer = document.getElementById('oopDots');
 for (let i = 0; i < totalSlides; i++) {
     const dot = document.createElement('div');
     dot.className = 'oop-dot' + (i === 0 ? ' active' : '');
@@ -113,7 +83,16 @@ document.getElementById('oopNext').onclick = () => {
     if (currentSlide < totalSlides - 1) goToSlide(currentSlide + 1);
 };
 
-// Keyboard navigation
+document.getElementById('sidebarToggle').onclick = () => {
+    const sidebar = document.getElementById('sidebar');
+    const btn = document.getElementById('sidebarToggle');
+    document.body.classList.toggle('sidebar-collapsed');
+    sidebar.classList.toggle('hidden');
+    btn.textContent = sidebar.classList.contains('hidden') ? '▶' : '◀';
+    // Invalidate map size after transition
+    setTimeout(() => map.invalidateSize(), 350);
+};
+
 document.addEventListener('keydown', (e) => {
     if (!document.getElementById('oopOverlay').classList.contains('active')) return;
     if (e.key === 'ArrowLeft') document.getElementById('oopPrev').click();
@@ -121,21 +100,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') document.getElementById('oopClose').click();
 });
 
-// ============================================
-// Sidebar Toggle
-// ============================================
-document.getElementById('sidebarToggle').onclick = () => {
-    const sidebar = document.getElementById('sidebar');
-    const btn = document.getElementById('sidebarToggle');
-    document.body.classList.toggle('sidebar-collapsed');
-    sidebar.classList.toggle('hidden');
-    btn.textContent = sidebar.classList.contains('hidden') ? '▶' : '◀';
-    setTimeout(() => map.invalidateSize(), 350);
-};
-
-// ============================================
-// Helper Functions
-// ============================================
+// HELPERS
 function showError(msg) {
     const el = document.getElementById('error');
     el.textContent = '❌ ' + msg;
@@ -152,22 +117,16 @@ function showSuccess(msg) {
 
 function clearMap() {
     map.eachLayer(layer => {
-        if (layer instanceof L.CircleMarker || layer instanceof L.Polyline || layer instanceof L.Circle) {
-            map.removeLayer(layer);
-        }
+        if (layer instanceof L.CircleMarker || layer instanceof L.Polyline || layer instanceof L.Circle) map.removeLayer(layer);
     });
 }
 
-// ============================================
-// GPS Location
-// ============================================
+// MY LOCATION - with high accuracy GPS
 document.getElementById('myLocationBtn').onclick = (e) => {
     e.preventDefault();
-    if (!navigator.geolocation) {
-        showError('GPS not supported');
-        return;
-    }
+    if (!navigator.geolocation) { showError('GPS not supported'); return; }
     
+    // Check if on HTTPS (required for accurate GPS on mobile)  
     if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         showError('⚠️ GPS requires HTTPS. Using IP-based location (less accurate).');
     }
@@ -182,24 +141,27 @@ document.getElementById('myLocationBtn').onclick = (e) => {
     const updateUI = (pos, final = false) => {
         document.getElementById('origin').value = `${pos.latitude.toFixed(6)},${pos.longitude.toFixed(6)}`;
         
+        // Clear previous location markers
         map.eachLayer(layer => {
             if (layer._myLocationMarker) map.removeLayer(layer);
         });
         
-        const accCircle = L.circle([pos.latitude, pos.longitude], {
-            radius: pos.accuracy,
-            color: pos.accuracy > 500 ? '#ff6b6b' : '#0066ff',
+        // Add accuracy circle
+        const accCircle = L.circle([pos.latitude, pos.longitude], { 
+            radius: pos.accuracy, 
+            color: pos.accuracy > 500 ? '#ff6b6b' : '#0066ff', 
             fillOpacity: 0.1,
             weight: 1
         }).addTo(map);
         accCircle._myLocationMarker = true;
         
-        const locMarker = L.circleMarker([pos.latitude, pos.longitude], {
-            radius: 8,
-            fillColor: pos.accuracy > 500 ? '#ff6b6b' : '#0066ff',
-            color: '#fff',
-            weight: 3,
-            fillOpacity: 1
+        // Add location marker
+        const locMarker = L.circleMarker([pos.latitude, pos.longitude], { 
+            radius: 8, 
+            fillColor: pos.accuracy > 500 ? '#ff6b6b' : '#0066ff', 
+            color: '#fff', 
+            weight: 3, 
+            fillOpacity: 1 
         }).addTo(map);
         locMarker._myLocationMarker = true;
         
@@ -229,6 +191,7 @@ document.getElementById('myLocationBtn').onclick = (e) => {
             
             console.log(`GPS attempt ${attempts}: accuracy=${accuracy}m`);
             
+            // Keep the most accurate position
             if (accuracy < bestAccuracy) {
                 bestAccuracy = accuracy;
                 bestPosition = { latitude, longitude, accuracy };
@@ -236,6 +199,7 @@ document.getElementById('myLocationBtn').onclick = (e) => {
                 showSuccess(`📡 GPS accuracy: ±${Math.round(accuracy)}m${accuracy > 100 ? ' (improving...)' : ''}`);
             }
             
+            // Accept if accuracy is good enough (<30m) or after 8 attempts
             if (accuracy < 30 || attempts >= 8) {
                 navigator.geolocation.clearWatch(watchId);
                 updateUI(bestPosition, true);
@@ -253,13 +217,14 @@ document.getElementById('myLocationBtn').onclick = (e) => {
                 showError(`❌ GPS error: ${err.message}`);
             }
         },
-        {
-            enableHighAccuracy: true,
+        { 
+            enableHighAccuracy: true, 
             timeout: 60000,
             maximumAge: 0
         }
     );
     
+    // Timeout fallback - use best position after 15 seconds
     setTimeout(() => {
         if (watchId) {
             navigator.geolocation.clearWatch(watchId);
@@ -272,13 +237,9 @@ document.getElementById('myLocationBtn').onclick = (e) => {
     }, 15000);
 };
 
-// Favorites GPS
 document.getElementById('favGpsBtn').onclick = (e) => {
     e.preventDefault();
-    if (!navigator.geolocation) {
-        showError('GPS not supported');
-        return;
-    }
+    if (!navigator.geolocation) { showError('GPS not supported'); return; }
     showSuccess('Getting precise location...');
     navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -290,9 +251,9 @@ document.getElementById('favGpsBtn').onclick = (e) => {
     );
 };
 
-// ============================================
-// Pick on Map
-// ============================================
+// PICK ON MAP - More reliable than GPS!
+let pickMode = null; // 'origin' or 'destination'
+
 document.getElementById('pickOriginBtn').onclick = () => {
     pickMode = 'origin';
     showSuccess('🗺️ Click on the map to set your ORIGIN location');
@@ -314,9 +275,10 @@ map.on('click', (e) => {
     if (pickMode === 'origin') {
         document.getElementById('origin').value = coords;
         
+        // Add marker
         map.eachLayer(layer => { if (layer._pickOrigin) map.removeLayer(layer); });
-        const marker = L.circleMarker([lat, lng], {
-            radius: 10, fillColor: '#16a34a', color: '#fff', weight: 3, fillOpacity: 1
+        const marker = L.circleMarker([lat, lng], { 
+            radius: 10, fillColor: '#16a34a', color: '#fff', weight: 3, fillOpacity: 1 
         }).addTo(map);
         marker._pickOrigin = true;
         marker.bindPopup('🟢 Origin: Your location').openPopup();
@@ -325,9 +287,10 @@ map.on('click', (e) => {
     } else {
         document.getElementById('destination').value = coords;
         
+        // Add marker
         map.eachLayer(layer => { if (layer._pickDest) map.removeLayer(layer); });
-        const marker = L.circleMarker([lat, lng], {
-            radius: 10, fillColor: '#dc2626', color: '#fff', weight: 3, fillOpacity: 1
+        const marker = L.circleMarker([lat, lng], { 
+            radius: 10, fillColor: '#dc2626', color: '#fff', weight: 3, fillOpacity: 1 
         }).addTo(map);
         marker._pickDest = true;
         marker.bindPopup('🔴 Destination').openPopup();
@@ -339,9 +302,7 @@ map.on('click', (e) => {
     document.getElementById('map').style.cursor = '';
 });
 
-// ============================================
-// Geocoding
-// ============================================
+// GEOCODING
 async function geocode(addr) {
     if (/^[-\d.,\s]+$/.test(addr)) {
         const p = addr.split(',').map(x => parseFloat(x.trim()));
@@ -352,22 +313,14 @@ async function geocode(addr) {
     return data.length ? [parseFloat(data[0].lon), parseFloat(data[0].lat)] : null;
 }
 
-// ============================================
-// Route Form
-// ============================================
+// ROUTE FORM
 document.getElementById('routeForm').onsubmit = async (e) => {
     e.preventDefault();
     const origin = document.getElementById('origin').value.trim();
     const dest = document.getElementById('destination').value.trim();
+    if (!origin || !dest) { showError('Enter origin and destination'); return; }
     
-    if (!origin || !dest) {
-        showError('Enter origin and destination');
-        return;
-    }
-    
-    const waypoints = Array.from(document.querySelectorAll('.waypoint-input'))
-        .map(i => i.value.trim())
-        .filter(v => v);
+    const waypoints = Array.from(document.querySelectorAll('.waypoint-input')).map(i => i.value.trim()).filter(v => v);
     
     document.getElementById('loading').style.display = 'block';
     document.getElementById('findBtn').disabled = true;
@@ -383,7 +336,6 @@ document.getElementById('routeForm').onsubmit = async (e) => {
         const url = `https://router.project-osrm.org/route/v1/driving/${coords.map(c => c.join(',')).join(';')}?overview=full&geometries=geojson&steps=true`;
         const res = await fetch(url);
         const data = await res.json();
-        
         if (data.code !== 'Ok') throw new Error('Route not found');
         
         const route = data.routes[0];
@@ -391,58 +343,32 @@ document.getElementById('routeForm').onsubmit = async (e) => {
         
         const directions = [];
         route.legs?.forEach(leg => leg.steps?.forEach(step => {
-            if (step.maneuver) {
-                directions.push({
-                    instruction: `${step.maneuver.type} ${step.maneuver.modifier || ''} on ${step.name || 'road'}`,
-                    distance: (step.distance / 1000).toFixed(2)
-                });
-            }
+            if (step.maneuver) directions.push({ instruction: `${step.maneuver.type} ${step.maneuver.modifier || ''} on ${step.name || 'road'}`, distance: (step.distance / 1000).toFixed(2) });
         }));
         
-        currentRoute = {
-            coordinates: routeCoords,
-            distance: route.distance / 1000,
-            time: Math.round(route.duration / 60),
-            originInput: origin,
-            destInput: dest,
-            directions
-        };
+        currentRoute = { coordinates: routeCoords, distance: route.distance / 1000, time: Math.round(route.duration / 60), originInput: origin, destInput: dest, directions };
         
         clearMap();
-        
-        L.circleMarker([coords[0][1], coords[0][0]], {
-            radius: 10, fillColor: '#4CAF50', color: '#fff', weight: 3, fillOpacity: 0.9
-        }).addTo(map).bindPopup('🟢 Origin');
-        
-        L.circleMarker([coords[coords.length-1][1], coords[coords.length-1][0]], {
-            radius: 10, fillColor: '#f44336', color: '#fff', weight: 3, fillOpacity: 0.9
-        }).addTo(map).bindPopup('🔴 Destination');
-        
+        L.circleMarker([coords[0][1], coords[0][0]], { radius: 10, fillColor: '#4CAF50', color: '#fff', weight: 3, fillOpacity: 0.9 }).addTo(map).bindPopup('🟢 Origin');
+        L.circleMarker([coords[coords.length-1][1], coords[coords.length-1][0]], { radius: 10, fillColor: '#f44336', color: '#fff', weight: 3, fillOpacity: 0.9 }).addTo(map).bindPopup('🔴 Destination');
         L.polyline(routeCoords, { color: '#2196F3', weight: 5 }).addTo(map);
         map.fitBounds(L.latLngBounds(routeCoords), { padding: [50, 50] });
         
         document.getElementById('distance').textContent = currentRoute.distance.toFixed(1);
         document.getElementById('time').textContent = currentRoute.time;
         document.getElementById('routeStats').style.display = 'grid';
-        
         showSuccess(`Route: ${currentRoute.distance.toFixed(1)} km, ${currentRoute.time} min`);
-        saveHistory(origin, dest, currentRoute.distance, currentRoute.time);
         
-        document.getElementById('directionsList').innerHTML = directions.slice(0, 15)
-            .map((d, i) => `<div class="item-card" style="cursor:default;"><b>${i+1}.</b> ${d.instruction} (${d.distance} km)</div>`)
-            .join('') || '<p style="color:#888;">No directions</p>';
-            
-    } catch (err) {
-        showError(err.message);
-    } finally {
+        saveHistory(origin, dest, currentRoute.distance, currentRoute.time);
+        document.getElementById('directionsList').innerHTML = directions.slice(0, 15).map((d, i) => `<div class="item-card" style="cursor:default;"><b>${i+1}.</b> ${d.instruction} (${d.distance} km)</div>`).join('') || '<p style="color:#888;">No directions</p>';
+    } catch (err) { showError(err.message); }
+    finally {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('findBtn').disabled = false;
     }
 };
 
-// ============================================
-// Waypoints
-// ============================================
+// WAYPOINTS
 document.getElementById('addWaypointBtn').onclick = () => {
     const div = document.createElement('div');
     div.className = 'waypoint-row';
@@ -451,9 +377,7 @@ document.getElementById('addWaypointBtn').onclick = () => {
     document.getElementById('waypointsContainer').appendChild(div);
 };
 
-// ============================================
-// Clear Route
-// ============================================
+// CLEAR
 document.getElementById('clearBtn').onclick = () => {
     clearMap();
     document.getElementById('origin').value = '';
@@ -463,50 +387,28 @@ document.getElementById('clearBtn').onclick = () => {
     currentRoute = null;
 };
 
-// ============================================
-// History
-// ============================================
+// HISTORY
 function saveHistory(o, d, dist, t) {
     let h = JSON.parse(localStorage.getItem('routeHistory') || '[]');
-    h.unshift({
-        origin: o,
-        dest: d,
-        distance: dist.toFixed(1),
-        time: t,
-        date: new Date().toLocaleString()
-    });
+    h.unshift({ origin: o, dest: d, distance: dist.toFixed(1), time: t, date: new Date().toLocaleString() });
     localStorage.setItem('routeHistory', JSON.stringify(h.slice(0, 20)));
 }
 
 function loadHistory() {
     const h = JSON.parse(localStorage.getItem('routeHistory') || '[]');
-    document.getElementById('historyList').innerHTML = h.length
-        ? h.map(r => `<div class="item-card" onclick="document.getElementById('origin').value='${r.origin}';document.getElementById('destination').value='${r.dest}';document.querySelector('[data-tab=route]').click();"><b>${r.origin}</b> → <b>${r.dest}</b><br><small>${r.distance} km • ${r.time} min</small></div>`).join('')
-        : '<p style="color:#888;">No routes</p>';
+    document.getElementById('historyList').innerHTML = h.length ? h.map(r => `<div class="item-card" onclick="document.getElementById('origin').value='${r.origin}';document.getElementById('destination').value='${r.dest}';document.querySelector('[data-tab=route]').click();"><b>${r.origin}</b> → <b>${r.dest}</b><br><small>${r.distance} km • ${r.time} min</small></div>`).join('') : '<p style="color:#888;">No routes</p>';
 }
 
-document.getElementById('clearHistoryBtn').onclick = () => {
-    localStorage.removeItem('routeHistory');
-    loadHistory();
-    showSuccess('Cleared');
-};
+document.getElementById('clearHistoryBtn').onclick = () => { localStorage.removeItem('routeHistory'); loadHistory(); showSuccess('Cleared'); };
 
-// ============================================
-// Favorites
-// ============================================
+// FAVORITES
 document.getElementById('saveFavBtn').onclick = () => {
     const n = document.getElementById('favName').value.trim();
     const c = document.getElementById('favCoords').value.trim();
-    
-    if (!n || !c) {
-        showError('Enter name and coords');
-        return;
-    }
-    
+    if (!n || !c) { showError('Enter name and coords'); return; }
     let f = JSON.parse(localStorage.getItem('favorites') || '[]');
     f.push({ name: n, coords: c });
     localStorage.setItem('favorites', JSON.stringify(f));
-    
     document.getElementById('favName').value = '';
     document.getElementById('favCoords').value = '';
     showSuccess('Saved!');
@@ -515,98 +417,44 @@ document.getElementById('saveFavBtn').onclick = () => {
 
 function loadFavorites() {
     const f = JSON.parse(localStorage.getItem('favorites') || '[]');
-    document.getElementById('favList').innerHTML = f.length
-        ? f.map((x, i) => `<div class="item-card" onclick="document.getElementById('origin').value='${x.coords}';document.querySelector('[data-tab=route]').click();">📍 <b>${x.name}</b><br><small>${x.coords}</small><button class="small-btn danger-btn" style="float:right;margin-top:-18px;" onclick="event.stopPropagation();deleteFav(${i});">✕</button></div>`).join('')
-        : '<p style="color:#888;">No favorites</p>';
+    document.getElementById('favList').innerHTML = f.length ? f.map((x, i) => `<div class="item-card" onclick="document.getElementById('origin').value='${x.coords}';document.querySelector('[data-tab=route]').click();">📍 <b>${x.name}</b><br><small>${x.coords}</small><button class="small-btn danger-btn" style="float:right;margin-top:-18px;" onclick="event.stopPropagation();deleteFav(${i});">✕</button></div>`).join('') : '<p style="color:#888;">No favorites</p>';
 }
 
-function deleteFav(i) {
-    let f = JSON.parse(localStorage.getItem('favorites') || '[]');
-    f.splice(i, 1);
-    localStorage.setItem('favorites', JSON.stringify(f));
-    loadFavorites();
-}
+function deleteFav(i) { let f = JSON.parse(localStorage.getItem('favorites') || '[]'); f.splice(i, 1); localStorage.setItem('favorites', JSON.stringify(f)); loadFavorites(); }
 
-// ============================================
-// Export
-// ============================================
-document.getElementById('exportGeoJSON').onclick = () => exportRoute('geojson');
-document.getElementById('exportGPX').onclick = () => exportRoute('gpx');
-document.getElementById('exportCSV').onclick = () => exportRoute('csv');
+// EXPORT
+document.getElementById('exportGeoJSON').onclick = () => exp('geojson');
+document.getElementById('exportGPX').onclick = () => exp('gpx');
+document.getElementById('exportCSV').onclick = () => exp('csv');
 
-function exportRoute(fmt) {
-    if (!currentRoute) {
-        showError('Find route first');
-        return;
-    }
-    
+function exp(fmt) {
+    if (!currentRoute) { showError('Find route first'); return; }
     let data, fn, type;
-    
-    if (fmt === 'geojson') {
-        data = JSON.stringify({
-            type: 'FeatureCollection',
-            features: [{
-                type: 'Feature',
-                geometry: {
-                    type: 'LineString',
-                    coordinates: currentRoute.coordinates.map(c => [c[1], c[0]])
-                },
-                properties: {
-                    distance: currentRoute.distance,
-                    time: currentRoute.time
-                }
-            }]
-        }, null, 2);
-        fn = 'route.geojson';
-        type = 'application/json';
-    } else if (fmt === 'gpx') {
-        data = `<?xml version="1.0"?><gpx version="1.1"><trk><name>Route</name><trkseg>${currentRoute.coordinates.map(c => `<trkpt lat="${c[0]}" lon="${c[1]}"></trkpt>`).join('')}</trkseg></trk></gpx>`;
-        fn = 'route.gpx';
-        type = 'application/gpx+xml';
-    } else {
-        data = 'lat,lon\n' + currentRoute.coordinates.map(c => `${c[0]},${c[1]}`).join('\n');
-        fn = 'route.csv';
-        type = 'text/csv';
-    }
-    
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([data], { type }));
-    a.download = fn;
-    a.click();
+    if (fmt === 'geojson') { data = JSON.stringify({ type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'LineString', coordinates: currentRoute.coordinates.map(c => [c[1], c[0]]) }, properties: { distance: currentRoute.distance, time: currentRoute.time } }] }, null, 2); fn = 'route.geojson'; type = 'application/json'; }
+    else if (fmt === 'gpx') { data = `<?xml version="1.0"?><gpx version="1.1"><trk><name>Route</name><trkseg>${currentRoute.coordinates.map(c => `<trkpt lat="${c[0]}" lon="${c[1]}"></trkpt>`).join('')}</trkseg></trk></gpx>`; fn = 'route.gpx'; type = 'application/gpx+xml'; }
+    else { data = 'lat,lon\n' + currentRoute.coordinates.map(c => `${c[0]},${c[1]}`).join('\n'); fn = 'route.csv'; type = 'text/csv'; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type })); a.download = fn; a.click();
     showSuccess(`Exported ${fmt.toUpperCase()}`);
 }
 
-// ============================================
-// Map Style
-// ============================================
+// MAP STYLE
 document.getElementById('mapStyle').onchange = (e) => {
     [osmLayer, satelliteLayer, darkLayer].forEach(l => map.removeLayer(l));
-    const layers = { osm: osmLayer, satellite: satelliteLayer, dark: darkLayer };
-    layers[e.target.value].addTo(map);
+    ({ osm: osmLayer, satellite: satelliteLayer, dark: darkLayer })[e.target.value].addTo(map);
 };
 
-// ============================================
-// Share
-// ============================================
+// SHARE
 document.getElementById('shareBtn').onclick = () => {
-    if (!currentRoute) {
-        showError('Find route first');
-        return;
-    }
-    
+    if (!currentRoute) { showError('Find route first'); return; }
     const url = `${location.origin}${location.pathname}?origin=${encodeURIComponent(currentRoute.originInput)}&dest=${encodeURIComponent(currentRoute.destInput)}`;
     navigator.clipboard.writeText(url).then(() => showSuccess('Link copied!')).catch(() => {});
     document.getElementById('shareLink').textContent = url;
 };
 
-// ============================================
-// URL Parameters
-// ============================================
+// URL PARAMS
 window.onload = () => {
     const p = new URLSearchParams(location.search);
     if (p.get('origin')) document.getElementById('origin').value = p.get('origin');
     if (p.get('dest')) document.getElementById('destination').value = p.get('dest');
-    if (p.get('origin') && p.get('dest')) {
-        setTimeout(() => document.getElementById('routeForm').dispatchEvent(new Event('submit')), 500);
-    }
+    if (p.get('origin') && p.get('dest')) setTimeout(() => document.getElementById('routeForm').dispatchEvent(new Event('submit')), 500);
 };

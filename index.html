@@ -3,321 +3,327 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baghdad Streets</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <link rel="stylesheet" href="styles.css">
+    <title>Baghdad Route Finder</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <!-- Sidebar -->
+<button class="sidebar-toggle" id="sidebarToggle">◀</button>
+<div class="container">
     <div class="sidebar" id="sidebar">
-        <!-- Header -->
         <div class="header">
-            <h1>🗺️ Baghdad Streets</h1>
-            <div class="header-controls">
-                <button id="darkToggle">🌙</button>
-                <select id="mapStyle">
-                    <option value="osm">Standard</option>
-                    <option value="satellite">Satellite</option>
-                    <option value="dark">Dark</option>
-                </select>
-            </div>
+            <h1>🗺️ Baghdad Routes</h1>
+            <div class="dark-toggle" id="darkToggle">🌙</div>
         </div>
-
-        <!-- Tabs -->
+        
         <div class="tabs">
             <button class="tab-btn active" data-tab="route">Route</button>
-            <button class="tab-btn" data-tab="directions">Steps</button>
+            <button class="tab-btn" data-tab="directions">Directions</button>
             <button class="tab-btn" data-tab="history">History</button>
-            <button class="tab-btn" data-tab="favorites">Saved</button>
+            <button class="tab-btn" data-tab="favorites">Favorites</button>
+            <button class="tab-btn" data-tab="tools">Tools</button>
             <button class="tab-btn" id="oopTabBtn">OOP</button>
         </div>
-
-        <!-- Route Tab -->
-        <div class="tab-content active" id="route">
-            <div class="error" id="error"></div>
-            <div class="success" id="success"></div>
-            
+        
+        <!-- ROUTE TAB -->
+        <div id="route" class="tab-content active">
             <form id="routeForm">
                 <div class="form-group">
                     <label>Origin</label>
-                    <div class="input-with-btn">
-                        <input type="text" id="origin" placeholder="Address or coordinates">
-                        <button type="button" id="myLocationBtn" class="icon-btn" title="Use GPS">⦿</button>
-                        <button type="button" id="pickOriginBtn" class="icon-btn success" title="Pick on map">◉</button>
+                    <div class="input-row">
+                        <input type="text" id="origin" placeholder="Address or lat,lon">
+                        <button type="button" id="myLocationBtn" class="small-btn gps-btn" title="Use GPS">⦿</button>
+                        <button type="button" id="pickOriginBtn" class="small-btn" title="Pick on map" style="background:#16a34a;">◉</button>
                     </div>
                 </div>
-                
-                <div id="waypointsContainer"></div>
-                <button type="button" id="addWaypointBtn" class="small-btn" style="margin-bottom:12px;">+ Add Stop</button>
-                
                 <div class="form-group">
                     <label>Destination</label>
-                    <div class="input-with-btn">
-                        <input type="text" id="destination" placeholder="Address or coordinates">
-                        <button type="button" id="pickDestBtn" class="icon-btn danger" title="Pick on map">◎</button>
+                    <div class="input-row">
+                        <input type="text" id="destination" placeholder="Address or lat,lon">
+                        <button type="button" id="pickDestBtn" class="small-btn" title="Pick on map" style="background:#dc2626;">◎</button>
                     </div>
                 </div>
-                
-                <button type="submit" class="btn" id="findBtn">🔍 Find Route</button>
+                <div id="waypointsContainer"></div>
+                <button type="button" id="addWaypointBtn" class="small-btn" style="margin-bottom: 10px;">+ Add Stop</button>
+                <button type="submit" id="findBtn" style="width: 100%;">🚗 Find Route</button>
+                <button type="button" id="clearBtn" class="small-btn danger-btn" style="width: 100%; margin-top: 8px;">🗑️ Clear</button>
             </form>
-            
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <span>Finding route...</span>
+            <div id="loading" style="display: none; text-align: center; margin: 15px 0;"><span class="spinner"></span> Finding route...</div>
+            <div class="error" id="error"></div>
+            <div class="success" id="success"></div>
+            <div class="stats" id="routeStats" style="display: none;">
+                <div class="stat"><div class="stat-value" id="distance">0</div><div class="stat-label">Distance (km)</div></div>
+                <div class="stat"><div class="stat-value" id="time">0</div><div class="stat-label">Time (min)</div></div>
             </div>
-            
-            <div class="route-stats" id="routeStats">
-                <div class="stat">
-                    <span class="value" id="distance">-</span>
-                    <span class="label">km</span>
-                </div>
-                <div class="stat">
-                    <span class="value" id="time">-</span>
-                    <span class="label">min</span>
-                </div>
-            </div>
-            
-            <div class="export-btns">
-                <button id="exportGeoJSON">GeoJSON</button>
-                <button id="exportGPX">GPX</button>
-                <button id="exportCSV">CSV</button>
-            </div>
-            
-            <button id="shareBtn" class="small-btn" style="width:100%;margin-top:8px;">📤 Share Route</button>
-            <div class="share-link" id="shareLink"></div>
-            
-            <button id="clearBtn" class="small-btn danger-btn" style="width:100%;margin-top:8px;">🗑️ Clear</button>
         </div>
-
-        <!-- Directions Tab -->
-        <div class="tab-content" id="directions">
-            <h3 style="margin-bottom:12px;">Turn-by-Turn</h3>
-            <div id="directionsList"><p style="color:#888;">Find a route first</p></div>
+        
+        <!-- DIRECTIONS TAB -->
+        <div id="directions" class="tab-content">
+            <h3>📋 Turn-by-Turn Directions</h3>
+            <div id="directionsList"><p style="color: #888; font-size: 12px;">Find a route first</p></div>
         </div>
-
-        <!-- History Tab -->
-        <div class="tab-content" id="history">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                <h3>Recent Routes</h3>
-                <button id="clearHistoryBtn" class="small-btn danger-btn">Clear</button>
-            </div>
-            <div id="historyList"></div>
+        
+        <!-- HISTORY TAB -->
+        <div id="history" class="tab-content">
+            <h3>⏱️ Recent Routes</h3>
+            <div id="historyList"><p style="color: #888; font-size: 12px;">No routes yet</p></div>
+            <button id="clearHistoryBtn" class="small-btn danger-btn" style="margin-top: 10px;">🗑️ Clear History</button>
         </div>
-
-        <!-- Favorites Tab -->
-        <div class="tab-content" id="favorites">
-            <h3 style="margin-bottom:12px;">Saved Places</h3>
+        
+        <!-- FAVORITES TAB -->
+        <div id="favorites" class="tab-content">
+            <h3>⭐ Save a Location</h3>
+            <div class="form-group"><input type="text" id="favName" placeholder="Name (Home, Work)"></div>
             <div class="form-group">
-                <input type="text" id="favName" placeholder="Place name">
-            </div>
-            <div class="form-group">
-                <div class="input-with-btn">
-                    <input type="text" id="favCoords" placeholder="Coordinates">
-                    <button type="button" id="favGpsBtn" class="icon-btn">📍</button>
+                <div class="input-row">
+                    <input type="text" id="favCoords" placeholder="Coordinates (lat,lon)">
+                    <button type="button" id="favGpsBtn" class="small-btn gps-btn">📍 GPS</button>
                 </div>
             </div>
-            <button id="saveFavBtn" class="small-btn" style="width:100%;margin-bottom:12px;">💾 Save</button>
-            <div id="favList"></div>
+            <button id="saveFavBtn" style="width: 100%;">💾 Save Favorite</button>
+            <hr>
+            <h3>📌 Saved Places</h3>
+            <div id="favList"><p style="color: #888; font-size: 12px;">No favorites</p></div>
+        </div>
+        
+        <!-- TOOLS TAB -->
+        <div id="tools" class="tab-content">
+            <h3>📤 Export Route</h3>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="exportGeoJSON" class="small-btn">GeoJSON</button>
+                <button id="exportGPX" class="small-btn">GPX</button>
+                <button id="exportCSV" class="small-btn">CSV</button>
+            </div>
+            <hr>
+            <h3>🎨 Map Style</h3>
+            <select id="mapStyle">
+                <option value="osm">OpenStreetMap</option>
+                <option value="satellite">Satellite</option>
+                <option value="dark">Dark</option>
+            </select>
+            <hr>
+            <h3>🔗 Share Route</h3>
+            <button id="shareBtn" class="small-btn">📋 Copy Link</button>
+            <div id="shareLink" style="font-size: 10px; word-break: break-all; margin-top: 8px; color: #666;"></div>
         </div>
     </div>
-
-    <!-- Sidebar Toggle Button -->
-    <button class="sidebar-toggle" id="sidebarToggle">◀</button>
-
-    <!-- Map Container -->
+    
     <div class="map-container">
         <div id="map"></div>
         
-        <!-- OOP Presentation Overlay -->
+        <!-- OOP PRESENTATION OVERLAY -->
         <div class="oop-overlay" id="oopOverlay">
-            <button class="oop-close" id="oopClose">✕</button>
+            <div class="oop-close" id="oopClose">×</div>
             
-            <div class="oop-slider-container">
-                <div class="oop-slider" id="oopSlider">
-                    <!-- Slide 1: Title -->
-                    <div class="oop-slide">
-                        <span class="slide-number">01 / 09</span>
-                        <h2>Object-Oriented Programming</h2>
-                        <p>A programming paradigm that organizes software design around data, or objects, rather than functions and logic.</p>
-                        <div class="note-box">
-                            <p>💡 OOP helps us model real-world entities as objects with properties and behaviors.</p>
-                        </div>
+            <div class="oop-slider" id="oopSlider">
+                <!-- SLIDE 1: INTRO -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">01</p>
+                    <h2>Object-Oriented Programming</h2>
+                    <p>OOP organizes code into Objects — containers with data (properties) and actions (methods).</p>
+                    <div class="code-box">
+                        <span class="comment">// An object bundles data + behavior</span><br>
+                        <span class="keyword">class</span> <span class="class-name">Route</span> {<br>
+                        &nbsp;&nbsp;<span class="property">distance</span> = <span class="string">0</span>;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Data</span><br>
+                        &nbsp;&nbsp;<span class="method">calculate</span>() { ... }&nbsp;&nbsp;<span class="comment">// Behavior</span><br>
+                        }
                     </div>
-
-                    <!-- Slide 2: Classes & Objects -->
-                    <div class="oop-slide">
-                        <span class="slide-number">02 / 09</span>
-                        <h2>Classes & Objects</h2>
-                        <p>A <strong>class</strong> is a blueprint for creating objects. An <strong>object</strong> is an instance of a class.</p>
-                        <div class="code-block">
-                            <span class="keyword">class</span> <span class="class-name">Car</span>:<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">def</span> <span class="method">__init__</span>(<span class="property">self</span>, brand, model):<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="property">self</span>.brand = brand<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="property">self</span>.model = model<br><br>
-                            <span class="comment"># Creating an object</span><br>
-                            my_car = <span class="class-name">Car</span>(<span class="string">"Toyota"</span>, <span class="string">"Camry"</span>)
+                    <p class="note-box">→ This app uses OOP to organize routing, locations, and history.</p>
+                </div>
+                
+                <!-- SLIDE 2: CLASSES -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">02</p>
+                    <h2>Classes in This App</h2>
+                    <div class="class-diagram">
+                        <div class="class-card">
+                            <h4>Route</h4>
+                            <div class="label">Properties</div>
+                            <div class="props">coordinates[], distance, time</div>
+                            <div class="label">Methods</div>
+                            <div class="methods">calculate(), export(), getDirections()</div>
                         </div>
-                    </div>
-
-                    <!-- Slide 3: The Four Pillars -->
-                    <div class="oop-slide">
-                        <span class="slide-number">03 / 09</span>
-                        <h2>The Four Pillars of OOP</h2>
-                        <div class="oop-pillars">
-                            <div class="oop-pillar">
-                                <div class="icon">🔒</div>
-                                <h3>Encapsulation</h3>
-                                <p>Bundling data and methods that operate on the data within a single unit</p>
-                            </div>
-                            <div class="oop-pillar">
-                                <div class="icon">🧬</div>
-                                <h3>Inheritance</h3>
-                                <p>Creating new classes based on existing classes</p>
-                            </div>
-                            <div class="oop-pillar">
-                                <div class="icon">🎭</div>
-                                <h3>Polymorphism</h3>
-                                <p>Objects of different classes responding to the same method call</p>
-                            </div>
-                            <div class="oop-pillar">
-                                <div class="icon">🎨</div>
-                                <h3>Abstraction</h3>
-                                <p>Hiding complex implementation details and showing only essential features</p>
-                            </div>
+                        <div class="class-card">
+                            <h4>Location</h4>
+                            <div class="label">Properties</div>
+                            <div class="props">address, lat, lon, accuracy</div>
+                            <div class="label">Methods</div>
+                            <div class="methods">geocode(), validate(), toCoords()</div>
                         </div>
-                    </div>
-
-                    <!-- Slide 4: Encapsulation -->
-                    <div class="oop-slide">
-                        <span class="slide-number">04 / 09</span>
-                        <h2>Encapsulation</h2>
-                        <p>Bundling data (attributes) and methods that operate on the data within a single unit (class), and restricting direct access to some components.</p>
-                        <div class="code-block">
-                            <span class="keyword">class</span> <span class="class-name">BankAccount</span>:<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">def</span> <span class="method">__init__</span>(<span class="property">self</span>):<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="property">self</span>.__balance = 0  <span class="comment"># Private attribute</span><br><br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">def</span> <span class="method">deposit</span>(<span class="property">self</span>, amount):<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="property">self</span>.__balance += amount<br><br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">def</span> <span class="method">get_balance</span>(<span class="property">self</span>):<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> <span class="property">self</span>.__balance
+                        <div class="class-card">
+                            <h4>Favorite</h4>
+                            <div class="label">Properties</div>
+                            <div class="props">name, lat, lon, category</div>
+                            <div class="label">Methods</div>
+                            <div class="methods">save(), delete(), useAsOrigin()</div>
                         </div>
-                        <div class="note-box">
-                            <p>Each class hides its internal data and only exposes what's necessary through methods.</p>
-                        </div>
-                    </div>
-
-                    <!-- Slide 5: Inheritance -->
-                    <div class="oop-slide">
-                        <span class="slide-number">05 / 09</span>
-                        <h2>Inheritance</h2>
-                        <p>A mechanism where a new class inherits properties and behaviors from an existing class.</p>
-                        <div class="code-block">
-                            <span class="keyword">class</span> <span class="class-name">Animal</span>:<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">def</span> <span class="method">speak</span>(<span class="property">self</span>):<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">pass</span><br><br>
-                            <span class="keyword">class</span> <span class="class-name">Dog</span>(<span class="class-name">Animal</span>):  <span class="comment"># Inherits from Animal</span><br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">def</span> <span class="method">speak</span>(<span class="property">self</span>):<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> <span class="string">"Woof!"</span><br><br>
-                            <span class="keyword">class</span> <span class="class-name">Cat</span>(<span class="class-name">Animal</span>):<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">def</span> <span class="method">speak</span>(<span class="property">self</span>):<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> <span class="string">"Meow!"</span>
-                        </div>
-                    </div>
-
-                    <!-- Slide 6: Polymorphism -->
-                    <div class="oop-slide">
-                        <span class="slide-number">06 / 09</span>
-                        <h2>Polymorphism</h2>
-                        <p>The ability of different objects to respond to the same method call in their own unique way.</p>
-                        <div class="code-block">
-                            <span class="keyword">def</span> <span class="method">animal_sound</span>(animal):<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">print</span>(animal.<span class="method">speak</span>())<br><br>
-                            <span class="comment"># Same method, different results</span><br>
-                            <span class="method">animal_sound</span>(<span class="class-name">Dog</span>())  <span class="comment"># Output: Woof!</span><br>
-                            <span class="method">animal_sound</span>(<span class="class-name">Cat</span>())  <span class="comment"># Output: Meow!</span>
-                        </div>
-                        <div class="note-box">
-                            <p>🎭 "Poly" means many, "morph" means forms — many forms of the same method!</p>
-                        </div>
-                    </div>
-
-                    <!-- Slide 7: Abstraction -->
-                    <div class="oop-slide">
-                        <span class="slide-number">07 / 09</span>
-                        <h2>Abstraction</h2>
-                        <p>Hiding complex implementation details and exposing only the necessary features to the user.</p>
-                        <div class="flow-diagram">
-                            <div class="flow-item">User Interface</div>
-                            <span class="flow-arrow">→</span>
-                            <div class="flow-item">Abstract Methods</div>
-                            <span class="flow-arrow">→</span>
-                            <div class="flow-item">Hidden Logic</div>
-                        </div>
-                        <div class="note-box" style="margin-top:30px;">
-                            <p>🎨 Like a car: You use the steering wheel and pedals (interface) without knowing the engine's inner workings (implementation).</p>
-                        </div>
-                    </div>
-
-                    <!-- Slide 8: Benefits -->
-                    <div class="oop-slide">
-                        <span class="slide-number">08 / 09</span>
-                        <h2>Benefits of OOP</h2>
-                        <div class="benefits-list">
-                            <div class="benefit-item">
-                                <span class="check">✓</span>
-                                <span>Code Reusability</span>
-                            </div>
-                            <div class="benefit-item">
-                                <span class="check">✓</span>
-                                <span>Modularity</span>
-                            </div>
-                            <div class="benefit-item">
-                                <span class="check">✓</span>
-                                <span>Easy Maintenance</span>
-                            </div>
-                            <div class="benefit-item">
-                                <span class="check">✓</span>
-                                <span>Data Security</span>
-                            </div>
-                            <div class="benefit-item">
-                                <span class="check">✓</span>
-                                <span>Flexibility</span>
-                            </div>
-                            <div class="benefit-item">
-                                <span class="check">✓</span>
-                                <span>Problem Solving</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Slide 9: Summary -->
-                    <div class="oop-slide">
-                        <span class="slide-number">09 / 09</span>
-                        <h2>Summary</h2>
-                        <p>OOP is a powerful paradigm that helps organize code into reusable, maintainable, and scalable structures.</p>
-                        <div class="oop-pillars" style="margin-top:30px;">
-                            <div class="oop-pillar">
-                                <h3>🔒 Encapsulation</h3>
-                                <p>Hide internal details</p>
-                            </div>
-                            <div class="oop-pillar">
-                                <h3>🧬 Inheritance</h3>
-                                <p>Reuse existing code</p>
-                            </div>
-                            <div class="oop-pillar">
-                                <h3>🎭 Polymorphism</h3>
-                                <p>Same interface, different behavior</p>
-                            </div>
-                            <div class="oop-pillar">
-                                <h3>🎨 Abstraction</h3>
-                                <p>Show only essentials</p>
-                            </div>
+                        <div class="class-card">
+                            <h4>History</h4>
+                            <div class="label">Properties</div>
+                            <div class="props">routes[], maxSize</div>
+                            <div class="label">Methods</div>
+                            <div class="methods">add(), getAll(), clear()</div>
                         </div>
                     </div>
                 </div>
+                
+                <!-- SLIDE 3: 4 PILLARS -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">03</p>
+                    <h2>The 4 Pillars of OOP</h2>
+                    <div class="oop-pillar-box">
+                        <div class="oop-pillar">
+                            <h4>1. Encapsulation</h4>
+                            <p>Hide internal data, expose only necessary methods.</p>
+                        </div>
+                        <div class="oop-pillar">
+                            <h4>2. Inheritance</h4>
+                            <p>Child classes inherit from parents to reuse code.</p>
+                        </div>
+                        <div class="oop-pillar">
+                            <h4>3. Polymorphism</h4>
+                            <p>Same method name, different implementations.</p>
+                        </div>
+                        <div class="oop-pillar">
+                            <h4>4. Abstraction</h4>
+                            <p>Hide complexity behind simple interfaces.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SLIDE 4: ENCAPSULATION -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">04</p>
+                    <h2>Encapsulation</h2>
+                    <p>Each class hides its internal data and exposes only what's necessary.</p>
+                    <div class="code-box">
+                        <span class="keyword">class</span> <span class="class-name">Route</span> {<br>
+                        &nbsp;&nbsp;<span class="keyword">private</span> <span class="property">_coordinates</span> = [];<br>
+                        &nbsp;&nbsp;<span class="keyword">private</span> <span class="property">_distance</span> = <span class="string">0</span>;<br><br>
+                        &nbsp;&nbsp;<span class="comment">// Public method hides complexity</span><br>
+                        &nbsp;&nbsp;<span class="method">export</span>(<span class="property">format</span>) {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> (format === <span class="string">'geojson'</span>) <span class="keyword">return</span> <span class="keyword">this</span>.<span class="method">_toGeoJSON</span>();<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> (format === <span class="string">'gpx'</span>) <span class="keyword">return</span> <span class="keyword">this</span>.<span class="method">_toGPX</span>();<br>
+                        &nbsp;&nbsp;}<br>
+                        }
+                    </div>
+                    <p class="note-box">→ User calls route.export('gpx') without knowing internal logic</p>
+                </div>
+                
+                <!-- SLIDE 5: INHERITANCE -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">05</p>
+                    <h2>Inheritance</h2>
+                    <p>Child classes inherit properties and methods from parent classes.</p>
+                    <div class="code-box">
+                        <span class="keyword">class</span> <span class="class-name">Location</span> {<br>
+                        &nbsp;&nbsp;<span class="property">lat</span>; <span class="property">lon</span>;<br>
+                        &nbsp;&nbsp;<span class="method">geocode</span>() { <span class="comment">/* convert address */</span> }<br>
+                        }<br><br>
+                        <span class="keyword">class</span> <span class="class-name">Favorite</span> <span class="keyword">extends</span> <span class="class-name">Location</span> {<br>
+                        &nbsp;&nbsp;<span class="property">name</span>; <span class="comment">// Additional property</span><br>
+                        &nbsp;&nbsp;<span class="method">save</span>() { <span class="comment">/* store in localStorage */</span> }<br>
+                        }<br><br>
+                        <span class="comment">// Favorite inherits lat, lon, geocode() from Location!</span>
+                    </div>
+                    <p class="note-box">→ Favorite reuses Location's code without rewriting it</p>
+                </div>
+                
+                <!-- SLIDE 6: POLYMORPHISM -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">06</p>
+                    <h2>Polymorphism</h2>
+                    <p>Same method name, different behavior based on context.</p>
+                    <div class="code-box">
+                        <span class="keyword">class</span> <span class="class-name">Route</span> {<br>
+                        &nbsp;&nbsp;<span class="method">export</span>(<span class="property">format</span>) {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">switch</span>(format) {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">case</span> <span class="string">'geojson'</span>: <span class="keyword">return</span> { <span class="property">type</span>: <span class="string">'Feature'</span>... };<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">case</span> <span class="string">'gpx'</span>: <span class="keyword">return</span> <span class="string">'&lt;gpx&gt;...&lt;/gpx&gt;'</span>;<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">case</span> <span class="string">'csv'</span>: <span class="keyword">return</span> <span class="string">'lat,lon\\n...'</span>;<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                        &nbsp;&nbsp;}<br>
+                        }
+                    </div>
+                    <p class="note-box">→ One export() method, three different outputs</p>
+                </div>
+                
+                <!-- SLIDE 7: ABSTRACTION -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">07</p>
+                    <h2>Abstraction</h2>
+                    <p>Hide complex implementation behind simple interfaces.</p>
+                    <div class="code-box">
+                        <span class="comment">// What you see (simple):</span><br>
+                        <span class="keyword">await</span> <span class="method">findRoute</span>(<span class="string">"Tahrir Square"</span>, <span class="string">"Airport"</span>);<br><br>
+                        <span class="comment">// What happens inside (complex):</span><br>
+                        <span class="comment">// 1. Geocode addresses to lat/lon</span><br>
+                        <span class="comment">// 2. Call OSRM routing API</span><br>
+                        <span class="comment">// 3. Parse GeoJSON response</span><br>
+                        <span class="comment">// 4. Calculate distance/time</span><br>
+                        <span class="comment">// 5. Generate turn-by-turn</span><br>
+                        <span class="comment">// 6. Update map display</span>
+                    </div>
+                    <p class="note-box">→ You click "Find Route" — all complexity is hidden</p>
+                </div>
+                
+                <!-- SLIDE 8: DATA FLOW -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">08</p>
+                    <h2>Data Flow in This App</h2>
+                    <div class="flow-diagram">
+                        <div class="flow-step input">userInput</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step method">Location.geocode()</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step method">Route.calculate()</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step method">History.add()</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step output">render()</div>
+                    </div>
+                    <div class="code-box" style="margin-top: 28px; max-width: 600px;">
+                        <span class="comment">// Each class handles one step</span><br>
+                        <span class="keyword">const</span> <span class="property">coords</span> = <span class="keyword">await</span> Location.<span class="method">geocode</span>(input);<br>
+                        <span class="keyword">const</span> <span class="property">route</span> = <span class="keyword">await</span> Route.<span class="method">calculate</span>(coords);<br>
+                        History.<span class="method">add</span>(route);<br>
+                        Map.<span class="method">render</span>(route);
+                    </div>
+                </div>
+                
+                <!-- SLIDE 9: WHY OOP -->
+                <div class="oop-slide">
+                    <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">09</p>
+                    <h2>Why OOP Matters</h2>
+                    <div class="benefits-box">
+                        <div class="benefit-row">
+                            <span class="benefit-key">reusable:</span>
+                            <span class="benefit-val">true</span>
+                            <span class="benefit-comment">// Route works for any coords</span>
+                        </div>
+                        <div class="benefit-row">
+                            <span class="benefit-key">organized:</span>
+                            <span class="benefit-val">true</span>
+                            <span class="benefit-comment">// Each class = one job</span>
+                        </div>
+                        <div class="benefit-row">
+                            <span class="benefit-key">maintainable:</span>
+                            <span class="benefit-val">true</span>
+                            <span class="benefit-comment">// Change export? Edit Route only</span>
+                        </div>
+                        <div class="benefit-row">
+                            <span class="benefit-key">scalable:</span>
+                            <span class="benefit-val">true</span>
+                            <span class="benefit-comment">// Easy to add Traffic, Weather</span>
+                        </div>
+                    </div>
+                    <div class="code-box" style="margin-top: 28px; max-width: 500px;">
+                        <span class="comment">// Result:</span><br>
+                        OOP = <span class="string">"Clean"</span> + <span class="string">"Modular"</span> + <span class="string">"Professional"</span>
+                    </div>
+                </div>
             </div>
-
-            <!-- Navigation -->
+            
             <div class="oop-nav">
                 <button id="oopPrev">← Previous</button>
                 <div class="oop-dots" id="oopDots"></div>
@@ -325,9 +331,9 @@
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Scripts -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
