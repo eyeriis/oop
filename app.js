@@ -323,7 +323,21 @@ map.on('click', (e) => {
 });
 
 // GEOCODING
-async function geocode(addr) {
+async function geocode(addr, inputId = null) {
+    // Check if there are stored coordinates from favorites
+    if (inputId) {
+        const input = document.getElementById(inputId);
+        if (input && input.dataset.coords) {
+            const storedCoords = input.dataset.coords;
+            const p = storedCoords.split(',').map(x => parseFloat(x.trim()));
+            if (p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) {
+                // Clear the stored coords after using
+                input.dataset.coords = '';
+                return [p[1], p[0]];
+            }
+        }
+    }
+    
     if (/^[-\d.,\s]+$/.test(addr)) {
         const p = addr.split(',').map(x => parseFloat(x.trim()));
         if (p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) return [p[1], p[0]];
@@ -350,9 +364,12 @@ document.getElementById('routeForm').onsubmit = async (e) => {
     
     try {
         const coords = [];
-        for (let addr of [origin, ...waypoints, dest]) {
-            const c = await geocode(addr);
-            if (!c) throw new Error(`Not found: "${addr}"`);
+        const addresses = [origin, ...waypoints, dest];
+        const inputIds = ['origin', ...waypoints.map(() => null), 'destination'];
+        
+        for (let i = 0; i < addresses.length; i++) {
+            const c = await geocode(addresses[i], inputIds[i]);
+            if (!c) throw new Error(`Not found: "${addresses[i]}"`);
             coords.push(c);
         }
         
@@ -464,15 +481,14 @@ function loadFavorites() {
         <div class="item-card" style="cursor:default;">
             <div style="display:flex;justify-content:space-between;align-items:start;">
                 <div>
-                    <b>📍 ${x.name}</b><br>
-                    <small style="color:#888;">${x.coords}</small>
+                    <b>📍 ${x.name}</b>
                 </div>
                 <button class="small-btn danger-btn" style="padding:4px 8px;font-size:10px;" onclick="event.stopPropagation();deleteFav(${i});">✕</button>
             </div>
             <div style="display:flex;gap:6px;margin-top:8px;">
                 <button class="small-btn" style="flex:1;background:#3a7fff;font-size:11px;" onclick="showFavOnMap('${x.coords}', '${x.name}')">👁️ Show</button>
-                <button class="small-btn" style="flex:1;background:#16a34a;font-size:11px;" onclick="useFavAsOrigin('${x.coords}')">🟢 Origin</button>
-                <button class="small-btn" style="flex:1;background:#dc2626;font-size:11px;" onclick="useFavAsDestination('${x.coords}')">🔴 Destination</button>
+                <button class="small-btn" style="flex:1;background:#16a34a;font-size:11px;" onclick="useFavAsOrigin('${x.coords}', '${x.name}')">🟢 Origin</button>
+                <button class="small-btn" style="flex:1;background:#dc2626;font-size:11px;" onclick="useFavAsDestination('${x.coords}', '${x.name}')">🔴 Destination</button>
             </div>
         </div>
     `).join('') : '<p style="color:#888;">No favorites</p>';
@@ -496,16 +512,18 @@ function showFavOnMap(coords, name) {
     showSuccess(`📍 Showing "${name}" on map`);
 }
 
-function useFavAsOrigin(coords) {
-    document.getElementById('origin').value = coords;
+function useFavAsOrigin(coords, name) {
+    document.getElementById('origin').value = name;
+    document.getElementById('origin').dataset.coords = coords;
     document.querySelector('[data-tab=route]').click();
-    showSuccess('✅ Origin set from favorite!');
+    showSuccess(`✅ Origin: ${name}`);
 }
 
-function useFavAsDestination(coords) {
-    document.getElementById('destination').value = coords;
+function useFavAsDestination(coords, name) {
+    document.getElementById('destination').value = name;
+    document.getElementById('destination').dataset.coords = coords;
     document.querySelector('[data-tab=route]').click();
-    showSuccess('✅ Destination set from favorite!');
+    showSuccess(`✅ Destination: ${name}`);
 }
 
 function deleteFav(i) { let f = JSON.parse(localStorage.getItem('favorites') || '[]'); f.splice(i, 1); localStorage.setItem('favorites', JSON.stringify(f)); loadFavorites(); }
