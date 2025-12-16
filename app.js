@@ -237,6 +237,7 @@ document.getElementById('myLocationBtn').onclick = (e) => {
     }, 15000);
 };
 
+// GPS location for favorites
 document.getElementById('favGpsBtn').onclick = (e) => {
     e.preventDefault();
     if (!navigator.geolocation) { showError('GPS not supported'); return; }
@@ -249,6 +250,13 @@ document.getElementById('favGpsBtn').onclick = (e) => {
         (err) => showError(`GPS error: ${err.message}`),
         { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
     );
+};
+
+// Pick location on map for favorites
+document.getElementById('favPickBtn').onclick = () => {
+    pickMode = 'favorite';
+    showSuccess('🗺️ Click on the map to pick a location for your favorite');
+    document.getElementById('map').style.cursor = 'crosshair';
 };
 
 // PICK ON MAP - More reliable than GPS!
@@ -284,7 +292,7 @@ map.on('click', (e) => {
         marker.bindPopup('🟢 Origin: Your location').openPopup();
         
         showSuccess('✅ Origin set! Now pick destination or click Find Route');
-    } else {
+    } else if (pickMode === 'destination') {
         document.getElementById('destination').value = coords;
         
         // Add marker
@@ -296,6 +304,18 @@ map.on('click', (e) => {
         marker.bindPopup('🔴 Destination').openPopup();
         
         showSuccess('✅ Destination set! Click Find Route');
+    } else if (pickMode === 'favorite') {
+        document.getElementById('favCoords').value = coords;
+        
+        // Add marker
+        map.eachLayer(layer => { if (layer._pickFav) map.removeLayer(layer); });
+        const marker = L.circleMarker([lat, lng], { 
+            radius: 10, fillColor: '#f59e0b', color: '#fff', weight: 3, fillOpacity: 1 
+        }).addTo(map);
+        marker._pickFav = true;
+        marker.bindPopup('⭐ Favorite location').openPopup();
+        
+        showSuccess('✅ Location picked! Enter a name and save.');
     }
     
     pickMode = null;
@@ -338,7 +358,7 @@ document.getElementById('routeForm').onsubmit = async (e) => {
         
         // Request alternatives with alternatives=true
         const url = `https://router.project-osrm.org/route/v1/driving/${coords.map(c => c.join(',')).join(';')}?overview=full&geometries=geojson&steps=true&alternatives=true`;
-        const res = await fetch(url);
+        const res = await fetch(url);z
         const data = await res.json();
         if (data.code !== 'Ok') throw new Error('Route not found');
         
