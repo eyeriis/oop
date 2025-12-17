@@ -1,33 +1,24 @@
-// Baghdad Route Finder - Application Logic
-
-// MAP SETUP
+// map init
 const map = L.map('map').setView([33.3128, 44.3615], 12);
 let osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 let satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
 let darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
-// Alternative lighter dark map
-let darkLightLayer = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+let darkLightLayer = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', { maxZoom: 19 }); // this one looks nicer
 let currentRoute = null;
 let currentMapLayer = osmLayer;
-
-// Add default layer
 osmLayer.addTo(map);
 
-// Function to switch map layer
 function setMapLayer(layer) {
     if (currentMapLayer) map.removeLayer(currentMapLayer);
     currentMapLayer = layer;
     layer.addTo(map);
 }
 
-// DARK MODE
 document.getElementById('darkToggle').onclick = () => {
     document.body.classList.toggle('dark');
     const isDark = document.body.classList.contains('dark');
     document.getElementById('darkToggle').textContent = isDark ? '☀️' : '🌙';
     localStorage.setItem('darkMode', isDark);
-    
-    // Switch map to dark/light layer (using lighter dark style)
     setMapLayer(isDark ? darkLightLayer : osmLayer);
 };
 if (localStorage.getItem('darkMode') === 'true') {
@@ -36,7 +27,6 @@ if (localStorage.getItem('darkMode') === 'true') {
     setMapLayer(darkLightLayer);
 }
 
-// TABS
 document.querySelectorAll('.tab-btn:not(#oopTabBtn)').forEach(btn => {
     btn.onclick = () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -48,7 +38,7 @@ document.querySelectorAll('.tab-btn:not(#oopTabBtn)').forEach(btn => {
     };
 });
 
-// OOP PRESENTATION
+// slides
 let currentSlide = 0;
 const totalSlides = 8;
 
@@ -89,8 +79,7 @@ document.getElementById('sidebarToggle').onclick = () => {
     document.body.classList.toggle('sidebar-collapsed');
     sidebar.classList.toggle('hidden');
     btn.textContent = sidebar.classList.contains('hidden') ? '▶' : '◀';
-    // Invalidate map size after transition
-    setTimeout(() => map.invalidateSize(), 350);
+    setTimeout(() => map.invalidateSize(), 350); // fix for map resize bug
 };
 
 document.addEventListener('keydown', (e) => {
@@ -100,7 +89,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') document.getElementById('oopClose').click();
 });
 
-// HELPERS
+// helper funcs
 function showError(msg) {
     const el = document.getElementById('error');
     el.textContent = '❌ ' + msg;
@@ -121,12 +110,11 @@ function clearMap() {
     });
 }
 
-// MY LOCATION - with high accuracy GPS
+// gps button
 document.getElementById('myLocationBtn').onclick = (e) => {
     e.preventDefault();
     if (!navigator.geolocation) { showError('GPS not supported'); return; }
     
-    // Check if on HTTPS (required for accurate GPS on mobile)  
     if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         showError('⚠️ GPS requires HTTPS. Using IP-based location (less accurate).');
     }
@@ -141,12 +129,10 @@ document.getElementById('myLocationBtn').onclick = (e) => {
     const updateUI = (pos, final = false) => {
         document.getElementById('origin').value = `${pos.latitude.toFixed(6)},${pos.longitude.toFixed(6)}`;
         
-        // Clear previous location markers
         map.eachLayer(layer => {
             if (layer._myLocationMarker) map.removeLayer(layer);
         });
         
-        // Add accuracy circle
         const accCircle = L.circle([pos.latitude, pos.longitude], { 
             radius: pos.accuracy, 
             color: pos.accuracy > 500 ? '#ff6b6b' : '#0066ff', 
@@ -155,7 +141,6 @@ document.getElementById('myLocationBtn').onclick = (e) => {
         }).addTo(map);
         accCircle._myLocationMarker = true;
         
-        // Add location marker
         const locMarker = L.circleMarker([pos.latitude, pos.longitude], { 
             radius: 8, 
             fillColor: pos.accuracy > 500 ? '#ff6b6b' : '#0066ff', 
@@ -191,7 +176,6 @@ document.getElementById('myLocationBtn').onclick = (e) => {
             
             console.log(`GPS attempt ${attempts}: accuracy=${accuracy}m`);
             
-            // Keep the most accurate position
             if (accuracy < bestAccuracy) {
                 bestAccuracy = accuracy;
                 bestPosition = { latitude, longitude, accuracy };
@@ -199,7 +183,7 @@ document.getElementById('myLocationBtn').onclick = (e) => {
                 showSuccess(`📡 GPS accuracy: ±${Math.round(accuracy)}m${accuracy > 100 ? ' (improving...)' : ''}`);
             }
             
-            // Accept if accuracy is good enough (<30m) or after 8 attempts
+            // good enough
             if (accuracy < 30 || attempts >= 8) {
                 navigator.geolocation.clearWatch(watchId);
                 updateUI(bestPosition, true);
@@ -224,7 +208,7 @@ document.getElementById('myLocationBtn').onclick = (e) => {
         }
     );
     
-    // Timeout fallback - use best position after 15 seconds
+    // fallback timeout
     setTimeout(() => {
         if (watchId) {
             navigator.geolocation.clearWatch(watchId);
@@ -237,7 +221,6 @@ document.getElementById('myLocationBtn').onclick = (e) => {
     }, 15000);
 };
 
-// GPS location for favorites
 document.getElementById('favGpsBtn').onclick = (e) => {
     e.preventDefault();
     if (!navigator.geolocation) { showError('GPS not supported'); return; }
@@ -252,15 +235,14 @@ document.getElementById('favGpsBtn').onclick = (e) => {
     );
 };
 
-// Pick location on map for favorites
 document.getElementById('favPickBtn').onclick = () => {
     pickMode = 'favorite';
     showSuccess('🗺️ Click on the map to pick a location for your favorite');
     document.getElementById('map').style.cursor = 'crosshair';
 };
 
-// PICK ON MAP - More reliable than GPS!
-let pickMode = null; // 'origin' or 'destination'
+// pick mode for map clicks
+let pickMode = null;
 
 document.getElementById('pickOriginBtn').onclick = () => {
     pickMode = 'origin';
@@ -283,7 +265,6 @@ map.on('click', (e) => {
     if (pickMode === 'origin') {
         document.getElementById('origin').value = coords;
         
-        // Add marker
         map.eachLayer(layer => { if (layer._pickOrigin) map.removeLayer(layer); });
         const marker = L.circleMarker([lat, lng], { 
             radius: 10, fillColor: '#16a34a', color: '#fff', weight: 3, fillOpacity: 1 
@@ -295,7 +276,6 @@ map.on('click', (e) => {
     } else if (pickMode === 'destination') {
         document.getElementById('destination').value = coords;
         
-        // Add marker
         map.eachLayer(layer => { if (layer._pickDest) map.removeLayer(layer); });
         const marker = L.circleMarker([lat, lng], { 
             radius: 10, fillColor: '#dc2626', color: '#fff', weight: 3, fillOpacity: 1 
@@ -307,7 +287,6 @@ map.on('click', (e) => {
     } else if (pickMode === 'favorite') {
         document.getElementById('favCoords').value = coords;
         
-        // Add marker
         map.eachLayer(layer => { if (layer._pickFav) map.removeLayer(layer); });
         const marker = L.circleMarker([lat, lng], { 
             radius: 10, fillColor: '#f59e0b', color: '#fff', weight: 3, fillOpacity: 1 
@@ -322,16 +301,14 @@ map.on('click', (e) => {
     document.getElementById('map').style.cursor = '';
 });
 
-// GEOCODING
 async function geocode(addr, inputId = null) {
-    // Check if there are stored coordinates from favorites
+    // use stored coords from favorites if available
     if (inputId) {
         const input = document.getElementById(inputId);
         if (input && input.dataset.coords) {
             const storedCoords = input.dataset.coords;
             const p = storedCoords.split(',').map(x => parseFloat(x.trim()));
             if (p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) {
-                // Clear the stored coords after using
                 input.dataset.coords = '';
                 return [p[1], p[0]];
             }
@@ -347,7 +324,7 @@ async function geocode(addr, inputId = null) {
     return data.length ? [parseFloat(data[0].lon), parseFloat(data[0].lat)] : null;
 }
 
-// ROUTE FORM
+// form submit
 document.getElementById('routeForm').onsubmit = async (e) => {
     e.preventDefault();
     const origin = document.getElementById('origin').value.trim();
@@ -358,8 +335,6 @@ document.getElementById('routeForm').onsubmit = async (e) => {
     
     document.getElementById('loading').style.display = 'block';
     document.getElementById('findBtn').disabled = true;
-    
-    // Show loading skeleton
     showLoadingSkeleton();
     
     try {
@@ -373,13 +348,10 @@ document.getElementById('routeForm').onsubmit = async (e) => {
             coords.push(c);
         }
         
-        // Request alternatives with alternatives=true
         const url = `https://router.project-osrm.org/route/v1/driving/${coords.map(c => c.join(',')).join(';')}?overview=full&geometries=geojson&steps=true&alternatives=true`;
         const res = await fetch(url);
         const data = await res.json();
         if (data.code !== 'Ok') throw new Error('Route not found');
-        
-        // Restore stats UI before updating
         restoreStatsUI();
         
         const route = data.routes[0];
@@ -396,9 +368,9 @@ document.getElementById('routeForm').onsubmit = async (e) => {
         L.circleMarker([coords[0][1], coords[0][0]], { radius: 10, fillColor: '#4CAF50', color: '#fff', weight: 3, fillOpacity: 0.9 }).addTo(map).bindPopup('🟢 Origin');
         L.circleMarker([coords[coords.length-1][1], coords[coords.length-1][0]], { radius: 10, fillColor: '#f44336', color: '#fff', weight: 3, fillOpacity: 0.9 }).addTo(map).bindPopup('🔴 Destination');
         
-        // Draw initial route (will be managed by showRouteAlternatives if alternatives exist)
+        // main route line
         const initialPolyline = L.polyline(routeCoords, { color: '#2196F3', weight: 5 }).addTo(map);
-        altRoutePolylines = [initialPolyline]; // Track it so it gets cleared when switching alternatives
+        altRoutePolylines = [initialPolyline];
         
         map.fitBounds(L.latLngBounds(routeCoords), { padding: [50, 50] });
         
@@ -407,13 +379,9 @@ document.getElementById('routeForm').onsubmit = async (e) => {
         document.getElementById('routeStats').style.display = 'grid';
         showSuccess(`Route: ${currentRoute.distance.toFixed(1)} km, ${currentRoute.time} min`);
         
-        // Show route alternatives if available
         showRouteAlternatives(data.routes, coords);
         
-        // Fetch POIs if enabled
-        if (poiEnabled) {
-            fetchPOIsAlongRoute();
-        }
+        if (poiEnabled) fetchPOIsAlongRoute();
         
         saveHistory(origin, dest, currentRoute.distance, currentRoute.time);
         document.getElementById('directionsList').innerHTML = directions.slice(0, 15).map((d, i) => `<div class="item-card" style="cursor:default;"><b>${i+1}.</b> ${d.instruction} (${d.distance} km)</div>`).join('') || '<p style="color:#888;">No directions</p>';
@@ -424,7 +392,6 @@ document.getElementById('routeForm').onsubmit = async (e) => {
     }
 };
 
-// WAYPOINTS
 document.getElementById('addWaypointBtn').onclick = () => {
     const div = document.createElement('div');
     div.className = 'waypoint-row';
@@ -433,7 +400,6 @@ document.getElementById('addWaypointBtn').onclick = () => {
     document.getElementById('waypointsContainer').appendChild(div);
 };
 
-// CLEAR
 document.getElementById('clearBtn').onclick = () => {
     clearMap();
     document.getElementById('origin').value = '';
@@ -443,15 +409,11 @@ document.getElementById('clearBtn').onclick = () => {
     document.getElementById('routeAlternatives').classList.remove('active');
     currentRoute = null;
     
-    // Clear alternative route polylines
     altRoutePolylines.forEach(p => map.removeLayer(p));
     altRoutePolylines = [];
-    
-    // Clear POI markers
     clearPOIMarkers();
 };
 
-// HISTORY
 function saveHistory(o, d, dist, t) {
     let h = JSON.parse(localStorage.getItem('routeHistory') || '[]');
     h.unshift({ origin: o, dest: d, distance: dist.toFixed(1), time: t, date: new Date().toLocaleString() });
@@ -465,7 +427,7 @@ function loadHistory() {
 
 document.getElementById('clearHistoryBtn').onclick = () => { localStorage.removeItem('routeHistory'); loadHistory(); showSuccess('Cleared'); };
 
-// FAVORITES
+// favs
 document.getElementById('saveFavBtn').onclick = () => {
     const n = document.getElementById('favName').value.trim();
     const c = document.getElementById('favCoords').value.trim();
@@ -532,13 +494,11 @@ function useFavAsDestination(coords, name) {
 
 function deleteFav(i) { let f = JSON.parse(localStorage.getItem('favorites') || '[]'); f.splice(i, 1); localStorage.setItem('favorites', JSON.stringify(f)); loadFavorites(); }
 
-// MAP STYLE
 document.getElementById('mapStyle').onchange = (e) => {
     [osmLayer, satelliteLayer, darkLayer].forEach(l => map.removeLayer(l));
     ({ osm: osmLayer, satellite: satelliteLayer, dark: darkLayer })[e.target.value].addTo(map);
 };
 
-// SHARE
 document.getElementById('shareBtn').onclick = () => {
     if (!currentRoute) { showError('Find route first'); return; }
     const url = `${location.origin}${location.pathname}?origin=${encodeURIComponent(currentRoute.originInput)}&dest=${encodeURIComponent(currentRoute.destInput)}`;
@@ -546,7 +506,7 @@ document.getElementById('shareBtn').onclick = () => {
     document.getElementById('shareLink').textContent = url;
 };
 
-// URL PARAMS
+// check url for shared routes
 window.onload = () => {
     const p = new URLSearchParams(location.search);
     if (p.get('origin')) document.getElementById('origin').value = p.get('origin');
@@ -554,11 +514,9 @@ window.onload = () => {
     if (p.get('origin') && p.get('dest')) setTimeout(() => document.getElementById('routeForm').dispatchEvent(new Event('submit')), 500);
 };
 
-// ========================================
-// FEATURE: AUTOCOMPLETE SEARCH
-// ========================================
-let autocompleteTimeout = null;
-const AUTOCOMPLETE_DELAY = 300; // ms debounce
+// autocomplete
+let acTimeout = null;
+const AC_DELAY = 300;
 
 function setupAutocomplete(inputId, dropdownId) {
     const input = document.getElementById(inputId);
@@ -567,17 +525,14 @@ function setupAutocomplete(inputId, dropdownId) {
     input.addEventListener('input', (e) => {
         const query = e.target.value.trim();
         
-        // Clear previous timeout
-        if (autocompleteTimeout) clearTimeout(autocompleteTimeout);
+        if (acTimeout) clearTimeout(acTimeout);
         
-        // Hide dropdown if query is too short or looks like coordinates
         if (query.length < 3 || /^[-\d.,\s]+$/.test(query)) {
             dropdown.classList.remove('active');
             return;
         }
         
-        // Debounce the API call
-        autocompleteTimeout = setTimeout(async () => {
+        acTimeout = setTimeout(async () => {
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Baghdad, Iraq')}&limit=5&addressdetails=1`);
                 const data = await res.json();
@@ -596,7 +551,6 @@ function setupAutocomplete(inputId, dropdownId) {
                 
                 dropdown.classList.add('active');
                 
-                // Add click handlers
                 dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
                     item.addEventListener('click', () => {
                         const lat = item.dataset.lat;
@@ -604,7 +558,6 @@ function setupAutocomplete(inputId, dropdownId) {
                         input.value = `${parseFloat(lat).toFixed(6)},${parseFloat(lon).toFixed(6)}`;
                         dropdown.classList.remove('active');
                         
-                        // Show marker on map
                         const markerColor = inputId === 'origin' ? '#16a34a' : '#dc2626';
                         const markerProp = inputId === 'origin' ? '_autoOrigin' : '_autoDest';
                         
@@ -619,10 +572,9 @@ function setupAutocomplete(inputId, dropdownId) {
             } catch (err) {
                 console.error('Autocomplete error:', err);
             }
-        }, AUTOCOMPLETE_DELAY);
+        }, AC_DELAY);
     });
     
-    // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
         if (!input.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.classList.remove('active');
@@ -630,13 +582,9 @@ function setupAutocomplete(inputId, dropdownId) {
     });
 }
 
-// Initialize autocomplete for both inputs
 setupAutocomplete('origin', 'originDropdown');
 setupAutocomplete('destination', 'destDropdown');
 
-// ========================================
-// FEATURE: LOADING SKELETON
-// ========================================
 function showLoadingSkeleton() {
     document.getElementById('routeStats').style.display = 'grid';
     document.getElementById('routeStats').innerHTML = `
@@ -660,9 +608,7 @@ function restoreStatsUI() {
     `;
 }
 
-// ========================================
-// FEATURE: ROUTE ALTERNATIVES
-// ========================================
+// route alt stuff
 let allRoutes = [];
 let altRoutePolylines = [];
 
@@ -689,10 +635,8 @@ function showRouteAlternatives(routes, coords) {
     
     document.getElementById('routeAlternatives').classList.add('active');
     
-    // Draw all routes
     drawAlternativeRoutes(routes, coords, 0);
     
-    // Add click handlers
     container.querySelectorAll('.alt-route-card').forEach(card => {
         card.addEventListener('click', () => {
             const idx = parseInt(card.dataset.index);
@@ -706,11 +650,10 @@ function showRouteAlternatives(routes, coords) {
 }
 
 function drawAlternativeRoutes(routes, coords, selectedIndex) {
-    // Clear previous alt route polylines
     altRoutePolylines.forEach(p => map.removeLayer(p));
     altRoutePolylines = [];
     
-    // Draw alternatives first (behind)
+    // other routes (behind)
     routes.forEach((route, i) => {
         if (i === selectedIndex) return;
         const routeCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
@@ -720,7 +663,7 @@ function drawAlternativeRoutes(routes, coords, selectedIndex) {
         altRoutePolylines.push(polyline);
     });
     
-    // Draw selected route on top
+    // main one on top
     const selectedRoute = routes[selectedIndex];
     const routeCoords = selectedRoute.geometry.coordinates.map(c => [c[1], c[0]]);
     const polyline = L.polyline(routeCoords, { color: '#2196F3', weight: 5 }).addTo(map);
@@ -738,11 +681,9 @@ function selectRoute(route, index, coords) {
         directions: []
     };
     
-    // Update stats
     document.getElementById('distance').textContent = currentRoute.distance.toFixed(1);
     document.getElementById('time').textContent = currentRoute.time;
     
-    // Update directions
     const directions = [];
     route.legs?.forEach(leg => leg.steps?.forEach(step => {
         if (step.maneuver) directions.push({
@@ -756,9 +697,7 @@ function selectRoute(route, index, coords) {
     ).join('') || '<p style="color:#888;">No directions</p>';
 }
 
-// ========================================
-// FEATURE: POI MARKERS ALONG ROUTE
-// ========================================
+// poi markers
 let poiMarkers = [];
 let poiEnabled = false;
 let activeCategories = ['fuel', 'restaurant'];
@@ -774,7 +713,6 @@ document.getElementById('poiToggle').addEventListener('change', (e) => {
     }
 });
 
-// POI category toggle
 document.querySelectorAll('.poi-chip').forEach(chip => {
     chip.addEventListener('click', () => {
         chip.classList.toggle('active');
@@ -805,7 +743,7 @@ async function fetchPOIsAlongRoute() {
     
     clearPOIMarkers();
     
-    // Sample points along the route
+    // grab some points along route
     const routeCoords = currentRoute.coordinates;
     const samplePoints = [];
     const step = Math.max(1, Math.floor(routeCoords.length / 5));
@@ -829,17 +767,15 @@ async function fetchPOIsAlongRoute() {
         parking: '🅿️'
     };
     
-    // Query Overpass for POIs near route
     for (const category of activeCategories) {
         const queries = categoryMapping[category].split('|');
         
-        for (const point of samplePoints.slice(0, 3)) { // Limit queries
+        for (const point of samplePoints.slice(0, 3)) {
             try {
                 const lat = point[0];
                 const lon = point[1];
-                const radius = 500; // 500m radius
+                const radius = 500;
                 
-                // Use Nominatim for POI search (simpler than Overpass)
                 const query = category === 'fuel' ? 'gas station' : 
                               category === 'restaurant' ? 'restaurant' :
                               category === 'hospital' ? 'hospital' :
@@ -849,7 +785,7 @@ async function fetchPOIsAlongRoute() {
                 const data = await res.json();
                 
                 data.forEach(poi => {
-                    // Check if already added (avoid duplicates)
+                    // skip dupes
                     const exists = poiMarkers.some(m => 
                         Math.abs(m.getLatLng().lat - poi.lat) < 0.0001 && 
                         Math.abs(m.getLatLng().lng - poi.lon) < 0.0001

@@ -1,4 +1,4 @@
-/* Baghdad Route Finder - Styles */
+/* main styles */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fafafa; color: #333; }
@@ -96,7 +96,7 @@ body.dark hr { border-color: #2a2a2a; }
 h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
 body.dark h3 { color: #e8e8e8; }
 
-/* OOP PRESENTATION OVERLAY - Minimal Dark Theme */
+/* oop modal */
 .oop-overlay {
     position: absolute;
     top: 0;
@@ -356,7 +356,7 @@ body.sidebar-collapsed .oop-overlay { border-radius: 0; }
     .oop-slide .code-box { font-size: 14px; padding: 20px; }
 }
 
-/* AUTOCOMPLETE DROPDOWN */
+/* autocomplete */
 .autocomplete-container {
     position: relative;
     flex: 1;
@@ -394,7 +394,7 @@ body.dark .autocomplete-item { border-color: #2a2a2a; color: #e0e0e0; }
 body.dark .autocomplete-item:hover { background: #282828; }
 .autocomplete-item small { color: #888; display: block; margin-top: 2px; }
 
-/* LOADING SKELETON */
+/* loading skeleton */
 .skeleton-loading {
     position: relative;
     overflow: hidden;
@@ -436,7 +436,7 @@ body.dark .skeleton-line { background: #2a2a2a; }
 .skeleton-line:nth-child(2) { width: 60%; }
 .skeleton-line:nth-child(3) { width: 70%; }
 
-/* ROUTE ALTERNATIVES */
+/* route alternatives */
 .route-alternatives {
     margin: 12px 0;
     display: none;
@@ -462,7 +462,7 @@ body.dark .alt-route-card .alt-label { color: #e0e0e0; }
 .alt-route-card .alt-stats { color: #666; font-size: 12px; margin-top: 4px; }
 body.dark .alt-route-card .alt-stats { color: #888; }
 
-/* TRAFFIC LAYER TOGGLE */
+/* traffic toggle */
 .traffic-toggle {
     display: flex;
     align-items: center;
@@ -511,7 +511,7 @@ body.dark .alt-route-card .alt-stats { color: #888; }
     border-top-color: rgba(0, 0, 0, 0.8) !important;
 }
 
-/* POI MARKERS */
+/* poi */
 .poi-section {
     margin-top: 12px;
 }
