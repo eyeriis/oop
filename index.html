@@ -77,7 +77,12 @@
         <div id="history" class="tab-content">
             <h3>⏱️ Recent Routes</h3>
             <div id="historyList"><p style="color: #888; font-size: 12px;">No routes yet</p></div>
-            <button id="clearHistoryBtn" class="small-btn danger-btn" style="margin-top: 10px;">🗑️ Clear History</button>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+                <button id="clearHistoryBtn" class="small-btn danger-btn" style="flex:1;">🗑️ Clear</button>
+                <button id="exportHistoryBtn" class="small-btn" style="flex:1;">📤 Export</button>
+                <button id="importHistoryBtn" class="small-btn" style="flex:1;">📥 Import</button>
+            </div>
+            <input type="file" id="importHistoryFile" accept=".json" style="display:none;">
         </div>
         
         <!-- favorites tab -->
@@ -95,6 +100,11 @@
             <hr>
             <h3>📌 Saved Places</h3>
             <div id="favList"><p style="color: #888; font-size: 12px;">No favorites</p></div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+                <button id="exportFavsBtn" class="small-btn" style="flex:1;">📤 Export</button>
+                <button id="importFavsBtn" class="small-btn" style="flex:1;">📥 Import</button>
+            </div>
+            <input type="file" id="importFavsFile" accept=".json" style="display:none;">
         </div>
         
         <!-- tools tab -->

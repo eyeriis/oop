@@ -446,6 +446,48 @@ function loadHistory() {
 
 document.getElementById('clearHistoryBtn').onclick = () => { localStorage.removeItem('routeHistory'); loadHistory(); showSuccess('Cleared'); };
 
+// export history
+document.getElementById('exportHistoryBtn').onclick = () => {
+    const h = JSON.parse(localStorage.getItem('routeHistory') || '[]');
+    if (h.length === 0) { showError('No history to export'); return; }
+    const blob = new Blob([JSON.stringify(h, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'route_history.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showSuccess('History exported!');
+};
+
+// import history
+document.getElementById('importHistoryBtn').onclick = () => {
+    document.getElementById('importHistoryFile').click();
+};
+
+document.getElementById('importHistoryFile').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const imported = JSON.parse(ev.target.result);
+            if (!Array.isArray(imported)) throw new Error('Invalid format');
+            let h = JSON.parse(localStorage.getItem('routeHistory') || '[]');
+            imported.forEach(item => {
+                if (item.origin && item.dest) h.push(item);
+            });
+            localStorage.setItem('routeHistory', JSON.stringify(h.slice(0, 50)));
+            loadHistory();
+            showSuccess(`Imported ${imported.length} routes!`);
+        } catch (err) {
+            showError('Invalid file format');
+        }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+};
+
 // favs
 document.getElementById('saveFavBtn').onclick = () => {
     const n = document.getElementById('favName').value.trim();
@@ -512,6 +554,48 @@ function useFavAsDestination(coords, name) {
 }
 
 function deleteFav(i) { let f = JSON.parse(localStorage.getItem('favorites') || '[]'); f.splice(i, 1); localStorage.setItem('favorites', JSON.stringify(f)); loadFavorites(); }
+
+// export favs as json
+document.getElementById('exportFavsBtn').onclick = () => {
+    const f = JSON.parse(localStorage.getItem('favorites') || '[]');
+    if (f.length === 0) { showError('No favorites to export'); return; }
+    const blob = new Blob([JSON.stringify(f, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'favorites.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showSuccess('Favorites exported!');
+};
+
+// import favs from json
+document.getElementById('importFavsBtn').onclick = () => {
+    document.getElementById('importFavsFile').click();
+};
+
+document.getElementById('importFavsFile').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const imported = JSON.parse(ev.target.result);
+            if (!Array.isArray(imported)) throw new Error('Invalid format');
+            let f = JSON.parse(localStorage.getItem('favorites') || '[]');
+            imported.forEach(item => {
+                if (item.name && item.coords) f.push(item);
+            });
+            localStorage.setItem('favorites', JSON.stringify(f));
+            loadFavorites();
+            showSuccess(`Imported ${imported.length} favorites!`);
+        } catch (err) {
+            showError('Invalid file format');
+        }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+};
 
 document.getElementById('mapStyle').onchange = (e) => {
     [osmLayer, satelliteLayer, darkLayer].forEach(l => map.removeLayer(l));
