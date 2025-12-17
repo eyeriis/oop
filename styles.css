@@ -165,8 +165,10 @@ body.sidebar-collapsed .oop-overlay { border-radius: 0; }
     justify-content: center;
     align-items: center;
     padding: 60px;
+    padding-bottom: 120px;
     color: white;
     text-align: center;
+    overflow-y: auto;
 }
 
 .oop-slide h2 {
@@ -250,6 +252,10 @@ body.sidebar-collapsed .oop-overlay { border-radius: 0; }
     display: flex;
     gap: 16px;
     align-items: center;
+    z-index: 100;
+    background: rgba(10, 10, 10, 0.95);
+    padding: 12px 20px;
+    border-radius: 12px;
 }
 
 .oop-nav button {
@@ -277,6 +283,13 @@ body.sidebar-collapsed .oop-overlay { border-radius: 0; }
     transition: all 0.2s;
 }
 .oop-dot.active { background: #fff; }
+
+.swipe-hint {
+    display: none;
+    font-size: 11px;
+    color: #666;
+    margin-top: 8px;
+}
 
 .class-diagram {
     display: flex;
@@ -349,11 +362,81 @@ body.sidebar-collapsed .oop-overlay { border-radius: 0; }
 
 @media (max-width: 768px) {
     .container { flex-direction: column; }
-    .sidebar { width: 100%; height: 50vh; order: 2; }
+    .sidebar { width: 100%; height: 50vh; order: 2; padding: 16px; }
     .map-container { height: 50vh; order: 1; }
-    .oop-slide h2 { font-size: 32px; }
-    .oop-slide p { font-size: 17px; }
-    .oop-slide .code-box { font-size: 14px; padding: 20px; }
+    
+    /* oop modal mobile */
+    .oop-slide { 
+        padding: 20px 16px; 
+        padding-top: 50px; 
+        padding-bottom: 60px; 
+        justify-content: flex-start; 
+    }
+    .oop-slide h2 { font-size: 22px; margin-bottom: 12px; }
+    .oop-slide p { font-size: 13px; line-height: 1.5; }
+    .oop-slide .code-box { font-size: 10px; padding: 12px; line-height: 1.5; overflow-x: auto; max-height: 200px; }
+    .oop-nav { 
+        position: fixed; 
+        bottom: 0; 
+        left: 0; 
+        right: 0; 
+        transform: none;
+        justify-content: center;
+        gap: 8px; 
+        padding: 16px; 
+        border-radius: 0;
+        background: #0a0a0a;
+        border-top: 1px solid #222;
+    }
+    .oop-nav button { display: none; }
+    .oop-dots { gap: 10px; }
+    .oop-dot { width: 10px; height: 10px; }
+    .oop-close { top: 10px; right: 14px; font-size: 26px; z-index: 200; }
+    
+    /* swipe hint */
+    .swipe-hint { display: block; }
+    
+    /* class cards mobile */
+    .class-diagram { flex-direction: column; gap: 12px; margin-top: 16px; }
+    .class-card { width: 100%; padding: 16px; }
+    .class-card h4 { font-size: 15px; margin-bottom: 10px; }
+    .class-card .props, .class-card .methods { font-size: 11px; }
+    
+    /* pillars mobile */
+    .oop-pillar-box { flex-direction: column; gap: 12px; padding: 16px; }
+    .oop-pillar { padding: 14px; }
+    .oop-pillar h4 { font-size: 14px; }
+    .oop-pillar p { font-size: 12px; }
+    
+    /* flow diagram mobile */
+    .flow-diagram { padding: 16px; gap: 8px; flex-direction: column; }
+    .flow-step { padding: 10px 14px; font-size: 12px; width: 100%; text-align: center; }
+    .flow-arrow { transform: rotate(90deg); }
+    
+    /* benefits mobile */
+    .benefits-box { padding: 16px; }
+    .benefit-row { flex-direction: column; gap: 4px; padding: 10px 0; }
+    .benefit-key, .benefit-val { font-size: 12px; min-width: auto; }
+    .benefit-comment { margin-left: 0; font-size: 11px; }
+    
+    /* tabs mobile */
+    .tabs { gap: 4px; }
+    .tab-btn { padding: 6px 10px; font-size: 11px; }
+    
+    h1 { font-size: 16px; }
+}
+
+/* extra small screens */
+@media (max-width: 400px) {
+    .sidebar { padding: 12px; height: 55vh; }
+    .oop-slide { padding: 16px 12px; padding-top: 50px; }
+    .oop-slide h2 { font-size: 20px; }
+    .oop-slide .code-box { font-size: 10px; padding: 10px; }
+    .class-card { padding: 12px; }
+    .class-card .props, .class-card .methods { font-size: 10px; }
+    .tab-btn { padding: 5px 8px; font-size: 10px; }
+    .input-row { flex-wrap: wrap; }
+    .input-row button { margin-top: 4px; }
 }
 
 /* autocomplete */
@@ -394,7 +477,7 @@ body.dark .autocomplete-item { border-color: #2a2a2a; color: #e0e0e0; }
 body.dark .autocomplete-item:hover { background: #282828; }
 .autocomplete-item small { color: #888; display: block; margin-top: 2px; }
 
-/* loading skeleton */
+/* loading skel */
 .skeleton-loading {
     position: relative;
     overflow: hidden;
@@ -496,7 +579,7 @@ body.dark .alt-route-card .alt-stats { color: #888; }
 .traffic-dot.yellow { background: #eab308; }
 .traffic-dot.red { background: #ef4444; }
 
-/* Traffic Tooltip */
+/* traffic tooltip */
 .traffic-tooltip {
     background: rgba(0, 0, 0, 0.8) !important;
     border: none !important;

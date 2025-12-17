@@ -1,4 +1,5 @@
 // map init
+
 const map = L.map('map').setView([33.3128, 44.3615], 12);
 let osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 let satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
@@ -73,6 +74,24 @@ document.getElementById('oopNext').onclick = () => {
     if (currentSlide < totalSlides - 1) goToSlide(currentSlide + 1);
 };
 
+// swipe support for mobile (i need to update it )
+let touchStartX = 0;
+let touchEndX = 0;
+const slider = document.getElementById('oopSlider');
+
+slider.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+}, { passive: true });
+
+slider.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 50) {
+        if (diff > 0 && currentSlide < totalSlides - 1) goToSlide(currentSlide + 1);
+        else if (diff < 0 && currentSlide > 0) goToSlide(currentSlide - 1);
+    }
+}, { passive: true });
+
 document.getElementById('sidebarToggle').onclick = () => {
     const sidebar = document.getElementById('sidebar');
     const btn = document.getElementById('sidebarToggle');
@@ -110,7 +129,7 @@ function clearMap() {
     });
 }
 
-// gps button
+// gps button (works fine in phones, windows may be unstable)
 document.getElementById('myLocationBtn').onclick = (e) => {
     e.preventDefault();
     if (!navigator.geolocation) { showError('GPS not supported'); return; }
@@ -241,7 +260,7 @@ document.getElementById('favPickBtn').onclick = () => {
     document.getElementById('map').style.cursor = 'crosshair';
 };
 
-// pick mode for map clicks
+//  picking map clicks mode
 let pickMode = null;
 
 document.getElementById('pickOriginBtn').onclick = () => {
@@ -302,7 +321,7 @@ map.on('click', (e) => {
 });
 
 async function geocode(addr, inputId = null) {
-    // use stored coords from favorites if available
+    // using fav coords if their are any
     if (inputId) {
         const input = document.getElementById(inputId);
         if (input && input.dataset.coords) {
@@ -463,17 +482,17 @@ function loadFavorites() {
 function showFavOnMap(coords, name) {
     const [lat, lon] = coords.split(',').map(c => parseFloat(c.trim()));
     
-    // Remove previous favorite markers
+    // Remove prev fav marker
     map.eachLayer(layer => { if (layer._showFav) map.removeLayer(layer); });
     
-    // Add marker
+    // adding a marker
     const marker = L.circleMarker([lat, lon], { 
         radius: 12, fillColor: '#f59e0b', color: '#fff', weight: 3, fillOpacity: 1 
     }).addTo(map);
     marker._showFav = true;
     marker.bindPopup(`⭐ <b>${name}</b><br><small>${coords}</small>`).openPopup();
     
-    // Zoom to location
+    // Zoommmmmm 
     map.setView([lat, lon], 16);
     showSuccess(`📍 Showing "${name}" on map`);
 }
@@ -506,7 +525,7 @@ document.getElementById('shareBtn').onclick = () => {
     document.getElementById('shareLink').textContent = url;
 };
 
-// check url for shared routes
+// check url for  paras
 window.onload = () => {
     const p = new URLSearchParams(location.search);
     if (p.get('origin')) document.getElementById('origin').value = p.get('origin');
@@ -608,7 +627,7 @@ function restoreStatsUI() {
     `;
 }
 
-// route alt stuff
+// route  stuff
 let allRoutes = [];
 let altRoutePolylines = [];
 
@@ -663,7 +682,7 @@ function drawAlternativeRoutes(routes, coords, selectedIndex) {
         altRoutePolylines.push(polyline);
     });
     
-    // main one on top
+    // main one ontop
     const selectedRoute = routes[selectedIndex];
     const routeCoords = selectedRoute.geometry.coordinates.map(c => [c[1], c[0]]);
     const polyline = L.polyline(routeCoords, { color: '#2196F3', weight: 5 }).addTo(map);
@@ -697,7 +716,7 @@ function selectRoute(route, index, coords) {
     ).join('') || '<p style="color:#888;">No directions</p>';
 }
 
-// poi markers
+// poi pointers
 let poiMarkers = [];
 let poiEnabled = false;
 let activeCategories = ['fuel', 'restaurant'];
@@ -743,7 +762,7 @@ async function fetchPOIsAlongRoute() {
     
     clearPOIMarkers();
     
-    // grab some points along route
+    // grabbing some points along the rode
     const routeCoords = currentRoute.coordinates;
     const samplePoints = [];
     const step = Math.max(1, Math.floor(routeCoords.length / 5));
