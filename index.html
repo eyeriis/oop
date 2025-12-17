@@ -25,7 +25,7 @@
             <button class="tab-btn" id="oopTabBtn">OOP</button>
         </div>
         
-        <!-- ROUTE TAB -->
+        <!-- route tab -->
         <div id="route" class="tab-content active">
             <form id="routeForm">
                 <div class="form-group">
@@ -67,20 +67,20 @@
             </div>
         </div>
         
-        <!-- DIRECTIONS TAB -->
+        <!-- directions tab -->
         <div id="directions" class="tab-content">
             <h3>📋 Turn-by-Turn Directions</h3>
             <div id="directionsList"><p style="color: #888; font-size: 12px;">Find a route first</p></div>
         </div>
         
-        <!-- HISTORY TAB -->
+        <!-- history tab -->
         <div id="history" class="tab-content">
             <h3>⏱️ Recent Routes</h3>
             <div id="historyList"><p style="color: #888; font-size: 12px;">No routes yet</p></div>
             <button id="clearHistoryBtn" class="small-btn danger-btn" style="margin-top: 10px;">🗑️ Clear History</button>
         </div>
         
-        <!-- FAVORITES TAB -->
+        <!-- favorites tab -->
         <div id="favorites" class="tab-content">
             <h3>⭐ Save a Location</h3>
             <div class="form-group"><input type="text" id="favName" placeholder="Name (Home, Work)"></div>
@@ -97,7 +97,7 @@
             <div id="favList"><p style="color: #888; font-size: 12px;">No favorites</p></div>
         </div>
         
-        <!-- TOOLS TAB -->
+        <!-- tools tab -->
         <div id="tools" class="tab-content">
             <h3>📍 Points of Interest</h3>
             <div class="poi-section">
@@ -130,12 +130,12 @@
     <div class="map-container">
         <div id="map"></div>
         
-        <!-- OOP PRESENTATION OVERLAY -->
+        <!-- oop modal -->
         <div class="oop-overlay" id="oopOverlay">
             <div class="oop-close" id="oopClose">×</div>
             
             <div class="oop-slider" id="oopSlider">
-                <!-- SLIDE 1: CLASSES -->
+                <!-- slide 1: classes -->
                 <div class="oop-slide">
                     <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">01</p>
                     <h2>Classes in This App</h2>
@@ -171,7 +171,7 @@
                     </div>
                 </div>
                 
-                <!-- SLIDE 2: 4 PILLARS -->
+                <!-- slide 2: 4 pillars -->
                 <div class="oop-slide">
                     <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">02</p>
                     <h2>The 4 Pillars of OOP</h2>
@@ -195,26 +195,32 @@
                     </div>
                 </div>
                 
-                <!-- SLIDE 3: ENCAPSULATION -->
+                <!-- slide 3: encapsulation -->
                 <div class="oop-slide">
                     <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">03</p>
                     <h2>Encapsulation</h2>
                     <p>Each class hides its internal data and exposes only what's necessary.</p>
                     <div class="code-box">
-                        <span class="keyword">class</span> <span class="class-name">Route</span> {<br>
-                        &nbsp;&nbsp;<span class="keyword">private</span> <span class="property">_coordinates</span> = [];<br>
-                        &nbsp;&nbsp;<span class="keyword">private</span> <span class="property">_distance</span> = <span class="string">0</span>;<br><br>
-                        &nbsp;&nbsp;<span class="comment">// Public method hides complexity</span><br>
-                        &nbsp;&nbsp;<span class="method">export</span>(<span class="property">format</span>) {<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> (format === <span class="string">'geojson'</span>) <span class="keyword">return</span> <span class="keyword">this</span>.<span class="method">_toGeoJSON</span>();<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> (format === <span class="string">'gpx'</span>) <span class="keyword">return</span> <span class="keyword">this</span>.<span class="method">_toGPX</span>();<br>
+                        <span class="keyword">class</span> <span class="class-name">Location</span> {<br>
+                        &nbsp;&nbsp;<span class="keyword">private</span> <span class="property">_lat</span>;<br>
+                        &nbsp;&nbsp;<span class="keyword">private</span> <span class="property">_lon</span>;<br>
+                        &nbsp;&nbsp;<span class="keyword">private</span> <span class="property">_accuracy</span>;<br><br>
+                        &nbsp;&nbsp;<span class="comment">// Public getter - controlled access</span><br>
+                        &nbsp;&nbsp;<span class="method">getCoords</span>() {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> `${<span class="keyword">this</span>.<span class="property">_lat</span>},${<span class="keyword">this</span>.<span class="property">_lon</span>}`;<br>
+                        &nbsp;&nbsp;}<br><br>
+                        &nbsp;&nbsp;<span class="comment">// Validation happens internally</span><br>
+                        &nbsp;&nbsp;<span class="method">setCoords</span>(<span class="property">lat</span>, <span class="property">lon</span>) {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> (<span class="property">lat</span> < -<span class="string">90</span> || <span class="property">lat</span> > <span class="string">90</span>) <span class="keyword">throw</span> <span class="string">'Invalid lat'</span>;<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">this</span>.<span class="property">_lat</span> = <span class="property">lat</span>;<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">this</span>.<span class="property">_lon</span> = <span class="property">lon</span>;<br>
                         &nbsp;&nbsp;}<br>
                         }
                     </div>
-                    <p class="note-box">→ User calls route.export('gpx') without knowing internal logic</p>
+                    <p class="note-box">→ User calls location.setCoords() - validation is hidden inside</p>
                 </div>
                 
-                <!-- SLIDE 4: INHERITANCE -->
+                <!-- slide 4: inheritance -->
                 <div class="oop-slide">
                     <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">04</p>
                     <h2>Inheritance</h2>
@@ -233,7 +239,7 @@
                     <p class="note-box">→ Favorite reuses Location's code without rewriting it</p>
                 </div>
                 
-                <!-- SLIDE 5: POLYMORPHISM -->
+                <!-- slide 5: polymorphism -->
                 <div class="oop-slide">
                     <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">05</p>
                     <h2>Polymorphism</h2>
@@ -252,7 +258,7 @@
                     <p class="note-box">→ One export() method, three different outputs</p>
                 </div>
                 
-                <!-- SLIDE 6: ABSTRACTION -->
+                <!-- slide 6: abstraction -->
                 <div class="oop-slide">
                     <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">06</p>
                     <h2>Abstraction</h2>
@@ -271,7 +277,7 @@
                     <p class="note-box">→ You click "Find Route" — all complexity is hidden</p>
                 </div>
                 
-                <!-- SLIDE 7: DATA FLOW -->
+                <!-- slide 7: data flow -->
                 <div class="oop-slide">
                     <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">07</p>
                     <h2>Data Flow in This App</h2>
@@ -295,7 +301,7 @@
                     </div>
                 </div>
                 
-                <!-- SLIDE 8: WHY OOP -->
+                <!-- slide 8: why oop -->
                 <div class="oop-slide">
                     <p style="font-size: 13px; color: #9ec4db; margin-bottom: 12px; letter-spacing: 3px; font-weight: 500; font-family: 'JetBrains Mono', monospace;">08</p>
                     <h2>Why OOP Matters</h2>
